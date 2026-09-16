@@ -1,0 +1,74 @@
+<link rel="stylesheet" href="stylesheet.css">
+<head>
+  <title>Violet Melodii!!!</title>
+  <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
+</head>
+
+<style>
+.zoom {
+  transition: transform .2s;
+}
+.zoom:hover{
+  -ms-transform: scale(1.1);
+  -webkit-transform: scale(1.1); 
+  transform: scale(1.1); 
+}</style>
+
+<html>
+<h1>
+<center><big><img src="ezgif-6dbe54e04356ef45.gif"></big></center>
+</h1>
+
+<h2><center><big>
+<a href="#" onclick="goAbout()">About me</a>
+</big></center></h2>
+
+<script>
+function goAbout() {
+    if (Math.random() < 0.2) {
+        window.location.href = "man/man.html";
+    } else {
+        window.location.href = "Abtme.html";
+    }
+}
+</script>
+    
+<h3><center><big>My Projects!:</big></center></h3>
+<body2><center>
+ <a href="colourgame/colorgame.html"><img src="colourgame/coloursart.png" class="zoom"></a>
+ <a href="nepetersite/site.html"><img src="nepetersite/nepeta.png" class="zoom"></a>
+ <a href="SPIRITBASEDGAME/spiritgame.html"><img src="SPIRITBASEDGAME/IMG_6961.png" class="zoom"></a>
+<br><br>
+
+</center></body2>
+    <center><big>Find me:</big></center><br>
+    <center>
+    <big>
+    <a style=color:1f1f1f; href="https://www.tumblr.com/blog/inkstrikeUV">Tumblr</a> <br>
+    <a style=color:1f1f1f; href="https://www.youtube.com/@inkstrikeUV">The 'Tube</a><br>
+    <a style=color:1f1f1f; href="https://www.x.com/inkstrikeUV">X the everything app</a><br>
+    <a style=color:1f1f1f; href="https://bsky.app/profile/inkstrikeUV">Bluesky</a></big></center>
+    <br><br><br><br><br><br><br><br><br><br><br><br>
+    <center>
+    <a href="VIRUS/virus.html"><img src="virus.gif"></a><br>
+<button id="egg" style="display:none" type="button">
+    <img src="egg.png">
+    </button>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const egg = document.getElementById("egg");
+    
+    if (localStorage.getItem("hasegg") === "true") {
+        if (egg) { 
+            egg.style.display = "";
+            
+            egg.addEventListener("click", function() {
+                localStorage.setItem("hasegg", "");
+                egg.style.display = "none"; 
+            });
+        }
+    }
+});
+</script>
+</center>
+</html>

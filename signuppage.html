@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="loginstyle.css">
+<head>
+  <title>Sign up</title>
+  <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
+</head>
+
+<html>
+<h1>
+    <center><big>Sign Up</big></center>
+</h1>
+    <center>
+<form id='signupForm'>
+    Username:<input type="text" id='username' required><br><br>
+    Password:<input type="text" id='password' required><br><br>
+    Confirm password:<input type="text" id='confirmPassword' required><br><br>
+    <button type="submit">Submit</button>
+
+    <script>
+        
+    </script>
+</form><br>
+<br>
+</center>
+    <center><a href="loginpage.html">Log in instead?</a></center>
+<footer><a href="Violet.html"><center>hoam :3</center></a></footer>
+
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Stop the page from refreshing
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Simple validation check
+            if (password !== confirmPassword) {
+                alert("Passwords do not match!");
+                return;
+            }
+
+            // Format the data text
+            const fileContent = `Username: ${username}\nPassword: ${password}`;
+
+            // Create a temporary link to download the text file
+            const blob = new Blob([fileContent], { type: 'text/plain' });
+            const link = document.createElement('a');
+            
+            link.download = `${username}_account.txt`; // Name of the downloaded file
+            link.href = window.URL.createObjectURL(blob);
+            
+            // Trigger the download automatically
+            link.click();
+
+            // Clean up the URL object
+            window.URL.revokeObjectURL(link.href);
+        });
+    </script>
+</html>
