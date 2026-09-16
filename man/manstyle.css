@@ -1,0 +1,11 @@
+html {
+    background-color:#000000
+}
+
+button {
+  background: transparent; /* Removes the default gray background */
+  border: none;            /* Removes the default border */
+  padding: 0;             /* Removes default inner padding */
+  margin: 0;              /* Removes default outer margins */
+  cursor: pointer;        /* Keeps the hand icon on hover */
+}

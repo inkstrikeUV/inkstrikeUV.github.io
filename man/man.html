@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="manstyle.css">
+<head>
+    <title>* (Well, there is a man here.)</title>
+  </head>
+<html>
+    <center>
+        <button id="eggbutton" type="button">
+<img src="ezgif-784d121c0238d562.gif">  </button>  
+</center>
+<script> 
+    document.addEventListener("DOMContentLoaded", function() {
+      function checkEggTitle() {
+        if (localStorage.getItem("hasegg") === "true") {
+          document.title = "* (Well, there is not a man here.)"; 
+        }
+      }
+      checkEggTitle();
+
+      document.getElementById("eggbutton").addEventListener("click", function() {
+        if (localStorage.getItem("hasegg") === "true") {
+            alert("* (Well, there is not a man here.)");
+        }
+        else {
+        localStorage.setItem("hasegg", "true"); 
+        alert("*(You received an egg.)"); 
+        }
+        checkEggTitle(); 
+      });
+  
+    });
+  </script>
+</html>
