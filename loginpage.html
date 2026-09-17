@@ -9,6 +9,64 @@
     <center><big>Log in</big></center>
 </h1>
 
+<form id='loginForm'>
+    Username or email:<input type="text" id='username' required><br><br>
+    Password:<input type="password" id='password' required><br><br>
+    <button type="submit">Submit</button><br><br></form>
+    <script>
+        
+    </script>
+    <button id="loginwithemailbutton">Sign in via email?</button>
+    <script>
+        const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+        const identifier = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        let targetEmail = identifier;
+
+        if (!identifier.includes('@')) {
+        targetEmail = `${identifier.toLowerCase()}@internal.site`;
+        }
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: targetEmail,
+            password: password
+        });
+        if (error) {
+            alert("Login failed: " + error.message);
+        } else {
+            alert("YAYAYAYAY YIPPEE UR LOGGED INNN");
+            window.location.href = "index.html";
+            }
+        });
+
+        document.getElementById('loginwithemailbutton').addEventListener('click', async () => {
+            const identifier = document.getElementById('username').value.trim();
+
+            if (!identifier || !identifier.includes('@')) {
+                alert("Thats not a valid email silly!!");
+                return; 
+            }
+            const { error } = await supabase.auth.signInWithOtp({
+                email: identifier,
+                options: {
+                    emailRedirectTo: window.location.href
+                }
+            });
+            if (error) {
+                alert("Error sending magic link: " + error.message);
+            } else {
+                alert("Youve got mail!!");
+            }
+});
+
+    </script>    
+<br>
+
     <center><a href="signuppage.html">Sign up instead?</a></center>
 <footer><a href="Violet.html"><center>hoam :3</center></a></footer>
 

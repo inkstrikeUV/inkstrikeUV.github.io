@@ -2,7 +2,10 @@
 <head>
   <title>Sign up</title>
   <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
+  <script src="https://jsdelivr.net"></script>
 </head>
+
+
 
 <html>
 <h1>
@@ -11,12 +14,53 @@
     <center>
 <form id='signupForm'>
     Username:<input type="text" id='username' required><br><br>
-    Password:<input type="text" id='password' required><br><br>
-    Confirm password:<input type="text" id='confirmPassword' required><br><br>
+    Password:<input type="password" id='password' required><br><br>
+    Confirm password:<input type="password" id='confirmPassword' required><br><br>
     <button type="submit">Submit</button>
+</form>
 
     <script>
+        const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); 
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (password !== confirmPassword) {
+        alert("They are not alike.");
+        return;
+    }
+
+    if (username.includes('@')) {
+        alert("Can't use tha @ symbol, bro!");
+        return; 
+    }
+    const fakeEmail = `${username.toLowerCase()}@internal.site`;
+
+    const { data, error } = await supabase.auth.signUp({
+        email: fakeEmail,
+        password: password,
+        options: {
+            data: { username: username } 
+        }
+    });
+
+    if (error) {
+        alert("Sign up failed: " + error.message);
+    } else {
+        await supabase.from('profiles').insert([{ id: data.user.id, username: username }]);
         
+        alert("Account created successfully!");
+        
+        window.location.href = "index.html"; 
+    }
+}); 
+
+
     </script>
 </form><br>
 <br>
@@ -24,35 +68,4 @@
     <center><a href="loginpage.html">Log in instead?</a></center>
 <footer><a href="Violet.html"><center>hoam :3</center></a></footer>
 
-    <script>
-        document.getElementById('signupForm').addEventListener('submit', function(e) {
-            e.preventDefault(); // Stop the page from refreshing
-
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-
-            // Simple validation check
-            if (password !== confirmPassword) {
-                alert("Passwords do not match!");
-                return;
-            }
-
-            // Format the data text
-            const fileContent = `Username: ${username}\nPassword: ${password}`;
-
-            // Create a temporary link to download the text file
-            const blob = new Blob([fileContent], { type: 'text/plain' });
-            const link = document.createElement('a');
-            
-            link.download = `${username}_account.txt`; // Name of the downloaded file
-            link.href = window.URL.createObjectURL(blob);
-            
-            // Trigger the download automatically
-            link.click();
-
-            // Clean up the URL object
-            window.URL.revokeObjectURL(link.href);
-        });
-    </script>
 </html>
