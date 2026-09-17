@@ -28,7 +28,7 @@
     <script>
         const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
-        supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaser = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         
         async function checkExistingSession() {
@@ -40,7 +40,7 @@
     }
     checkExistingSession();
     document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await supabase.auth.signOut();
+        await supabaser.auth.signOut();
         alert("Logged out successfully.");
         window.location.reload(); 
     });
@@ -63,7 +63,7 @@
     }
     const fakeEmail = `${username.toLowerCase()}@internal.site`;
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabaser.auth.signUp({
         email: fakeEmail,
         password: password,
         options: {
@@ -74,7 +74,7 @@
     if (error) {
         alert("Sign up failed: " + error.message);
     } else {
-        await supabase.from('profiles').insert([{ id: data.user.id, username: username }]);
+        await supabaser.from('profiles').insert([{ id: data.user.id, username: username }]);
         
         alert("Account created successfully!");
         
