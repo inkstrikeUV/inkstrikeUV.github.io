@@ -12,17 +12,39 @@
     <center><big>Sign Up</big></center>
 </h1>
     <center>
+
+    <div id="alreadySignedInMessage" style="display: none;">
+    <p>You are already signed in!</p>
+    <button id="logoutBtn">Sign out to create a new account</button>
+    </div>
+    <div id="signupFormContainer">
 <form id='signupForm'>
     Username:<input type="text" id='username' required><br><br>
     Password:<input type="password" id='password' required><br><br>
     Confirm password:<input type="password" id='confirmPassword' required><br><br>
     <button type="submit">Submit</button>
-</form>
+</form></div>
 
     <script>
         const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        
+        async function checkExistingSession() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            document.getElementById('signupFormContainer').style.display = 'none';
+            document.getElementById('alreadySignedInMessage').style.display = 'block';
+        }
+    }
+    checkExistingSession();
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        alert("Logged out successfully.");
+        window.location.reload(); 
+    });
+
 
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
             e.preventDefault(); 
