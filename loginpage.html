@@ -10,10 +10,15 @@
     <center><big>Log in</big></center>
 </h1>
 <center>
-<form id='loginForm'>
+      <div id="alreadySignedInMessage" style="display: none;">
+    <p>You are already signed in!</p>
+    <button id="logoutBtn">Sign out?</button>
+    </div>
+    <div id="loginFormContainer">
+    <form id='loginForm'>
     Username or email:<input type="text" id='username' required><br><br>
     Password:<input type="password" id='password' required><br><br>
-    <button type="submit">Submit</button><br><br></form>
+    <button type="submit">Submit</button><br><br></form></div>
     <script>
         
     </script>
