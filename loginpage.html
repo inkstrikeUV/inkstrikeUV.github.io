@@ -2,7 +2,7 @@
 <head>
   <title>Log in</title>
   <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
-  <script src="https://cloudflare.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <html>
@@ -21,7 +21,7 @@
     <script>
         const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -33,7 +33,7 @@
         if (!identifier.includes('@')) {
         targetEmail = `${identifier.toLowerCase()}@internal.site`;
         }
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabaser.auth.signInWithPassword({
             email: targetEmail,
             password: password
         });
@@ -52,7 +52,7 @@
                 alert("Thats not a valid email silly!!");
                 return; 
             }
-            const { error } = await supabase.auth.signInWithOtp({
+            const { error } = await supabaser.auth.signInWithOtp({
                 email: identifier,
                 options: {
                     emailRedirectTo: window.location.href
