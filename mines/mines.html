@@ -10,10 +10,17 @@
   <button id="rock"><img src="rock-stones-transparent-background-29.png"></button>
 </center>
 <script>
+  const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
+
+       const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   document.addEventListener("DOMContentLoaded", function() {
     const rock = document.getElementById("rock")
   rock.addEventListener("click", function() {
-    alert("haiii");})})
+    // make the variable "money" if the user doesnt have it
+    // add one money 
+    // play a sound
+    })})
 </script>
 </body>
 </html>
