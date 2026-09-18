@@ -28,6 +28,20 @@
         const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
         const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        async function checkExistingSession() {
+        const { data: { session } } = await supabaser.auth.getSession();
+        if (session) {
+            document.getElementById('loginFormContainer').style.display = 'none';
+            document.getElementById('alreadySignedInMessage').style.display = 'block';
+        }
+    }
+    checkExistingSession();
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await supabaser.auth.signOut();
+        alert("Logged out successfully.");
+        window.location.reload(); 
+    });
+      
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
         const identifier = document.getElementById('username').value.trim();
