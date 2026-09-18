@@ -18,7 +18,25 @@
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+async function loadSavedBalance() {
+    const { data: { session } } = await supabaser.auth.getSession();
+    if (session) {
+        const { data, error } = await supabaser
+            .from('profiles')
+            .select('money')
+            .eq('id', session.user.id)
+            .single();
+        if (data) {
+            money = data.money;
+            document.getElementById("money-display").innerText = money;
+        }
+    } else {
+        window.location.href = "../loginpage.html";
+    }
+}
+
   document.addEventListener("DOMContentLoaded", function() {
+    loadSavedBalance();
     const rock = document.getElementById("rock");
   rock.addEventListener("click", function() {
     // play sounds
@@ -37,12 +55,11 @@ const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             const { data, error } = await supabaser.rpc('increment_money', {
             user_id: session.user.id,
             amount: 1 
-    
       });
-  if (error) console.error(error);
-}
-        else {window.location.href = "../loginpage.html";}
+      if (error) console.error(error);
     }
+    else {window.location.href = "../loginpage.html";}
+    };
     checkExistingSession();
     money += 1;
     document.getElementById("money-display").innerText = money;
