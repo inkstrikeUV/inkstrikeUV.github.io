@@ -6,41 +6,10 @@
 </head>
 <html>
   <body>
-    <p>Balance: $<span id="money-display">Loading...</span></p>
-
-    <script>
-async function checkExistingSession() {
-  try {
-    const { data: { session }, error } = await supabaser.auth.getSession();
-    if (error) throw error;
-
-    if (session) {
-      // 1. FETCH THE MONEY FROM SUPABASE
-      const { data, error: fetchError } = await supabaser
-        .from('profiles')           // ⚠️ Change to your exact table name
-        .select('money')            // ⚠️ Change to your exact column name
-        .eq('id', session.user.id)  // Match the logged-in user
-        .single();                  // Get just one row
-
-      if (fetchError) throw fetchError;
-
-      // 2. UPDATE THE HTML DISPLAY
-      if (data) {
-        money = data.money; // Keep your tracking variable in sync
-        document.getElementById("money-display").innerText = money;
-      }
-
-    } else {
-      window.location.href = "../index.html";
-    }
-  } catch (err) {
-    console.error("Error fetching balance:", err.message);
-    document.getElementById("money-display").innerText = "Error";
-  }
-}
+    <p>total money:<span id="money-display">Loading...</span></p>
 
 
-    </script>
+
 <center> 
   <button id="rock"><img src="rock-stones-transparent-background-29.png"></button>
 </center>
@@ -52,6 +21,7 @@ async function checkExistingSession() {
   document.addEventListener("DOMContentLoaded", function() {
     const rock = document.getElementById("rock");
   rock.addEventListener("click", function() {
+    // play sounds
     const sounds = ["snd1.mp3","snd2.mp3","snd3.mp3","snd4.mp3","snd5.mp3","snd6.mp3","snd7.mp3","snd8.mp3","snd9.mp3"];
     const audio = new Audio();
     const randomIndex = Math.floor(Math.random() * sounds.length);
@@ -59,6 +29,8 @@ async function checkExistingSession() {
     audio.play().catch(error => {
     console.error("Playback failed:", error);
     });
+
+    // check if youre signed in
     async function checkExistingSession() {
         const { data: { session } } = await supabaser.auth.getSession();
         if (session) {
@@ -67,10 +39,9 @@ async function checkExistingSession() {
             amount: 1 
     
       });
-
   if (error) console.error(error);
 }
-        else {window.location.href = "../index.html";}
+        else {window.location.href = "../loginpage.html";}
     }
     checkExistingSession();
     document.getElementById("money-display").innerText = money;
