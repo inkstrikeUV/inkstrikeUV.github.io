@@ -24,12 +24,16 @@
     audio.play().catch(error => {
     console.error("Playback failed:", error);
     });
-  // if they are, add 1 money 
     async function checkExistingSession() {
         const { data: { session } } = await supabaser.auth.getSession();
         if (session) {
-          
-        }
+        const { data, error } = await supabaser.rpc('increment_money', {
+        user_id: session.user.id,
+        amount: 1 
+      });
+
+  if (error) console.error(error);
+}
         else {window.location.href = "../index.html";}
     }
     checkExistingSession();
