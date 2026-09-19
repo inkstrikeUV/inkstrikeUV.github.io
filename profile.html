@@ -6,12 +6,14 @@
 </head>
 
 <html>
-
+<center>
 <div id="profile-card">
     <h1 id="viewing-username">Loading profile...</h1>
-    <p id="viewing-bio"></p>
+    <img id="profilepic" src="pixil-frame-0 (9).png" style="width:150px; height:150px; border-radius:50%; object-fit:cover;">
     <p id="viewing-money"></p>
+    <p id="viewing-bio"></p>
 </div>
+</center>
 
 <script>
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
@@ -56,12 +58,14 @@ async function loadProfile() {
     }
 
     document.getElementById("viewing-username").innerText = `@${data.username}'s Profile`;
-    document.getElementById("viewing-bio").innerText = data.bio || "No bio written yet.";
     document.getElementById("viewing-money").innerText = `Coins: ${data.money}`;
+    document.getElementById("viewing-bio").innerText = data.bio || "No bio written yet.";
+    if (data.avatar_url) {
+        document.getElementById("viewing-pfp").src = data.avatar_url;
     if (data.bgcolor) {
         document.body.style.backgroundColor = data.bgcolor;
     }
-}
+}}
 
 loadProfile();
 </script>
