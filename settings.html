@@ -35,7 +35,8 @@
     });
 
 
-    document.getElementById('pfpurl').addEventListener('submit', async () => {
+    document.getElementById('pfpurl').addEventListener('submit', async (e) => {
+        e.preventDefault();
         const newurl = document.getElementById('url').value.trim();
         if (!newurl.startsWith('http://') && !newurl.startsWith('https://')) {
             alert("plz use a url starting with http:// next time okie? <3");
