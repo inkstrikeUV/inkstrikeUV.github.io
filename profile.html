@@ -23,11 +23,9 @@ async function loadProfile() {
     const urlParams = new URLSearchParams(window.location.search);
     let targetUsername = urlParams.get('user');
 
-    // 2. If NO user is in the URL, fallback to check if the current user is viewing their own profile
     if (!targetUsername) {
         const { data: { session } } = await supabaser.auth.getSession();
         if (session) {
-            // Fetch current logged in user's profile to get their username
             const { data: myData } = await supabaser
                 .from('profiles')
                 .select('username')
