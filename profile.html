@@ -7,6 +7,7 @@
 
 
 
+<!-- Elements to show the requested profile's data -->
 <div id="profile-card">
     <h1 id="viewing-username">Loading profile...</h1>
     <p id="viewing-bio"></p>
@@ -19,13 +20,15 @@ const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function loadProfile() {
+    // 1. Check the URL for a specific ?user= target
     const urlParams = new URLSearchParams(window.location.search);
     let targetUsername = urlParams.get('user');
 
-    
+    // 2. If NO user is in the URL, fallback to check if the current user is viewing their own profile
     if (!targetUsername) {
         const { data: { session } } = await supabaser.auth.getSession();
         if (session) {
+            // Fetch current logged in user's profile to get their username
             const { data: myData } = await supabaser
                 .from('profiles')
                 .select('username')
@@ -38,23 +41,27 @@ async function loadProfile() {
         }
     }
 
+    // 3. If there is still no username to look up, stop here
     if (!targetUsername) {
         document.getElementById("viewing-username").innerText = "No profile specified. Please log in or view a direct user link.";
         return;
     }
 
+    // 4. Fetch the target user's profile from the database
     const { data, error } = await supabaser
         .from('profiles')
         .select('username, bio, money, bgcolor')
-        .eq('username', targetUsername) 
+        .eq('username', targetUsername) // Matching against the text 'username' column
         .single();
 
+    // 5. Handle user not found error
     if (error || !data) {
         document.getElementById("viewing-username").innerText = "User profile not found.";
         console.error("Profile fetch error:", error);
         return;
     }
 
+    // 6. Success! Display the correct user's profile data
     document.getElementById("viewing-username").innerText = `@${data.username}'s Profile`;
     document.getElementById("viewing-bio").innerText = data.bio || "No bio written yet.";
     document.getElementById("viewing-money").innerText = `Coins: ${data.money}`;
@@ -63,5 +70,6 @@ async function loadProfile() {
     }
 }
 
+// Run the script immediately when the page loads
 loadProfile();
 </script>
