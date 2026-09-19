@@ -57,8 +57,8 @@ async function loadProfile() {
         return;
     }
 
-    document.getElementById("viewing-username").innerText = `@${data.username}'s Profile`;
-    document.getElementById("viewing-money").innerText = `Coins: ${data.money}`;
+    document.getElementById("viewing-username").innerText = `${data.username}`;
+    document.getElementById("viewing-money").innerText = `Money: ${data.money}`;
     document.getElementById("viewing-bio").innerText = data.bio || "No bio written yet.";
     if (data.avatar_url) {
         document.getElementById("viewing-pfp").src = data.avatar_url;
