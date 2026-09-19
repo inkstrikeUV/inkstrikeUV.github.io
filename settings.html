@@ -9,7 +9,7 @@
 <center><h1><big>Settings</big></h1></center><br>
 <h2><center><big>Account settings</big></center></h2>
 <center>
-<form>profile picture url:<input type="text"><button type="submit">submit</button></form>
+<form id='pfpurl'>profile picture url:<input type="text" id="url"><button type="submit">submit</button></form>
 
 <button id="logoutBtn">Sign out?</button>
 
@@ -31,7 +31,31 @@
     document.getElementById('logoutBtn').addEventListener('click', async () => {
         await supabaser.auth.signOut();
         alert("Logged out successfully.");
-        window.location.reload(); 
+        window.location.reload();
+    });
+
+
+    document.getElementById('pfpurl').addEventListener('submit', async () => {
+        const newurl = document.getElementById('url').value.trim();
+        if (!newurl.startsWith('http://') && !newurl.startsWith('https://')) {
+            alert("plz use a url starting with http:// next time okie? <3");
+            return;
+        }
+        const { data: { session } } = await supabaser.auth.getSession();
+        if (session) {
+            const { error } = await supabaser
+                .from('profiles')
+                .update({ avatar_url: newurl }) 
+                .eq('id', session.user.id);
+
+            if (error) {
+                alert("Failed to update profile picture: " + error.message);
+                console.error(error);
+            } else {
+                alert("Profile picture updated successfully!");
+                document.getElementById('url').value = "";
+            }
+        }
     });
 
 
