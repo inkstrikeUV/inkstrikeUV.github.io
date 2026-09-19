@@ -17,12 +17,20 @@
 
 <html>
   <div id="loginlink"><a href="loginpage.html">sign in</a></div>
-  <div id="accountlink"><span id="username-display">Loading...</span><a href=""></a></div>
+  <div id="accountlink" style.display = 'none'><span id="username-display">Loading...</span><a href=""></a></div>
 
   <script>
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+async function checkExistingSession() {
+        const { data: { session } } = await supabaser.auth.getSession();
+        if (session) {
+            document.getElementById('loginlink').style.display = 'none';
+            document.getElementById('accountlink').style.display = 'block';
+        }
+    }
+checkExistingSession();
 async function loadusername() {
     const { data: { session } } = await supabaser.auth.getSession();
     if (session) {
