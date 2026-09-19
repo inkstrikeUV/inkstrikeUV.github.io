@@ -10,6 +10,7 @@
 <h2><center><big>Account settings</big></center></h2>
 <center>
 <form id='pfpurl'>profile picture url:<input type="text" id="url"><button type="submit">submit</button></form>
+<form id='bgcolor'>profile color:<input type="text" id="color"><button type="submit">submit</button></form>
 
 <button id="logoutBtn">Sign out?</button>
 
@@ -58,7 +59,29 @@
             }
         }
     });
+    document.getElementById('bgcolor').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newbgc = document.getElementById('color').value.trim();
+        if (!newbgc.startsWith('#')) {
+            alert("plz use a hex value next time okie? <3");
+            return;
+        }
+        const { data: { session } } = await supabaser.auth.getSession();
+        if (session) {
+            const { error } = await supabaser
+                .from('profiles')
+                .update({ bgcolor: newbgc }) 
+                .eq('id', session.user.id);
 
+            if (error) {
+                alert("Failed to update profile color: " + error.message);
+                console.error(error);
+            } else {
+                alert("Profile color updated successfully!");
+                document.getElementById('bgcolor').value = "";
+            }
+        }
+    });
 
 </script>
 </html>
