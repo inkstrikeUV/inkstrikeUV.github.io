@@ -7,12 +7,26 @@
 
 <html>
 <center><h1><big>Settings</big></h1></center><br>
-<h2><center><big>Account settings</big></center></h2>
+<h2><center><big>Profile settings</big></center></h2>
 <center>
 <form id='pfpurl'>profile picture url:<input type="text" id="url"><button type="submit">submit</button></form>
 <form id='bgcolor'>profile color:<input type="color" id="color"><button type="submit">submit</button></form>
-<form id='email'>connect email:<input type="text" id="email2"><button type="submit">submit</button></form>
 <form id='bio'>create a bio:<input type="text" id="bio2"><button type="submit">submit</button></form>
+<form id='privacy'>privacy setting:<select id="privacy2">
+  <option value="public">public</option>
+  <option value="friends">friends</option>
+  <option value="private">private</option>
+</select><button type="submit">submit</button></form>
+<br>basically who can see your profile, public is anyone, friends is well, friends, and private is no-one.<br>
+
+<h2><center><big>Account settings</big></center></h2>
+<form id='accountsettings'>
+connect email:<input type="text" id="email2">
+Change username:<input type="text" id="usernamechange2">
+Change password:<input type="text" id="passwordchange2">
+<br>
+Current password(required for any Account changes):<input type="password" id="currentpassword2">
+<button type="submit">submit</button></form>
 
 <button id="logoutBtn">Sign out?</button>
 
@@ -76,33 +90,11 @@
                 console.error(error);
             } else {
                 alert("Profile color updated successfully!");
-                document.getElementById('bgcolor').value = "";
+                document.getElementById('color').value = "";
             }
         }
     });
-    document.getElementById('email').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const newemail = document.getElementById('email2').value.trim();
-        if (!newemail.contains('@')) {
-            alert("plz use a valid email next time okie? <3");
-            return;
-        }
-        const { data: { session } } = await supabaser.auth.getSession();
-        if (session) {
-            const { error } = await supabaser
-                .from('profiles')
-                .update({ email: newemail }) 
-                .eq('id', session.user.id);
 
-            if (error) {
-                alert("Failed to update email: " + error.message);
-                console.error(error);
-            } else {
-                alert("Email updated successfully!");
-                document.getElementById('email').value = "";
-            }
-        }
-    });
     document.getElementById('bio').addEventListener('submit', async (e) => {
         e.preventDefault();
         const newbio = document.getElementById('bio2').value.trim();
@@ -119,6 +111,25 @@
             } else {
                 alert("bio updated successfully!");
                 document.getElementById('bio').value = "";
+            }
+        }
+    });
+    document.getElementById('privacy').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newpriv = document.getElementById('privacy2').value.trim();
+        const { data: { session } } = await supabaser.auth.getSession();
+        if (session) {
+            const { error } = await supabaser
+                .from('profiles')
+                .update({ privacy: newpriv }) 
+                .eq('id', session.user.id);
+
+            if (error) {
+                alert("Failed to update privacy: " + error.message);
+                console.error(error);
+            } else {
+                alert("privacy updated successfully!");
+                document.getElementById('privacy2').value = "";
             }
         }
     });
