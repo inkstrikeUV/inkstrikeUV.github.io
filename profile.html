@@ -15,6 +15,30 @@ const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+async function loadRequestedProfile() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    const targetUsername = urlParams.get('user');
+
+    if (!targetUsername) {
+        console.error("No user requested in the URL.");
+        return;
+    }
+
+    const { data, error } = await supabaser
+        .from('profiles')
+        .select('username') 
+        .eq('username', targetUsername)
+        .single();
+
+    if (error || !data) {
+        console.error("Profile not found or error fetching data:", error);
+        return;
+    }
+
+    console.log("Loaded profile data:", data);
+}
+loadRequestedProfile()
 async function loadusername() {
     const { data: { session } } = await supabaser.auth.getSession();
     if (session) {
