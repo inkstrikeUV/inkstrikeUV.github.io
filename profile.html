@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="stylesheet.css">
+<head>
+  <title>Violet's cool website</title>
+  <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+
+
+<html>
+<center><h1><span id="username-display">Loading...</span></h1></center>
+
+  <script>
+const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
+const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
+const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function loadusername() {
+    const { data: { session } } = await supabaser.auth.getSession();
+    if (session) {
+        const { data, error } = await supabaser
+            .from('profiles')
+            .select('username')
+            .eq('id', session.user.id)
+            .single();
+        if (data) {
+            const username = data.username;
+            document.getElementById("username-display").innerText = username;
+        }
+    }
+}
+loadusername();
+</script>
+
+
+
+</html>
