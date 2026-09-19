@@ -64,9 +64,12 @@
     const fakeEmail = `${username.toLowerCase()}@internal.site`;
 
     const { data, error } = await supabaser.auth.signUp({
-        username: username,
         email: fakeEmail,
         password: password,
+        options: {
+            data: {
+                username: username 
+        }}
     });
 
         if (error) {
