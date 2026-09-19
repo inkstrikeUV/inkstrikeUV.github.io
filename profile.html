@@ -10,7 +10,7 @@
 <center>
 <div id="profile-card">
     <h1 id="viewing-username">Loading profile...</h1>
-    <img id="profilepic" src="default-pfp.png" style="width:150px; height:150px; border-radius:50%; object-fit:cover;">
+    <img id="viewing-pfp" src="default-pfp.png" style="width:150px; height:150px; border-radius:50%; object-fit:cover;">
     <p id="viewing-money"></p>
     <p id="viewing-bio"></p>
 </div>
@@ -48,7 +48,7 @@ async function loadProfile() {
 
     const { data, error } = await supabaser
         .from('profiles')
-        .select('username, bio, money, bgcolor')
+        .select('username, bio, money, bgcolor, avatar_url')
         .eq('username', targetUsername) 
         .single();
 
@@ -63,10 +63,11 @@ async function loadProfile() {
     document.getElementById("viewing-bio").innerText = data.bio || "No bio written yet.";
     if (data.avatar_url) {
         document.getElementById("viewing-pfp").src = data.avatar_url;
+    };
     if (data.bgcolor) {
         document.body.style.backgroundColor = data.bgcolor;
-    }
-}}
+    };
+};
 
 loadProfile();
 </script>
