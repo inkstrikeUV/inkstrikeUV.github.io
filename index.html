@@ -16,7 +16,8 @@
 }</style>
 
 <html>
-
+  <div id="loginlink"><a href="loginpage.html">sign in</a></div>
+  <div id="accountlink"><span id="username-display">Loading...</span><a href=""></a></div>
 
   <script>
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
@@ -31,17 +32,13 @@ async function loadusername() {
             .eq('id', session.user.id)
             .single();
         if (data) {
-            money = data.money;
-            document.getElementById("money-display").innerText = money;
+            const username = data.username;
+            document.getElementById("username-display").innerText = username;
         }
-    } else {
-        window.location.href = "../loginpage.html";
     }
 }
+loadusername();
 </script>
-
-  <div id="loginlink"><a href="loginpage.html">sign in</a></div>
-  <div id="accountlink"><a href=""></a></div>
 
 <h1>
 <center><big><img src="ezgif-6dbe54e04356ef45.gif"></big></center>
