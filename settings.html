@@ -9,4 +9,30 @@
 <center><h1><big>Settings</big></h1></center><br><br>
 
 <h2><center><big>Account settings</big></center></h2>
+
+<button id="logoutBtn">Sign out?</button>
+
+
+<script>
+    const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
+    const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
+    const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+    async function checkExistingSession() {
+    const { data: { session } } = await supabaser.auth.getSession();
+    if (!session) {
+        alert("hey you aint meant to be e're! get 'em boys!!")
+        window.location.href = "index.html"; 
+    }
+    }
+    checkExistingSession();
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await supabaser.auth.signOut();
+        alert("Logged out successfully.");
+        window.location.reload(); 
+    });
+
+
+</script>
 </html>
