@@ -1,0 +1,10 @@
+@font-face {
+    font-family: font; 
+    src: url('Vifont!!!.ttf'); 
+}
+html {
+    font-family: font; cursor: url("pixil-frame-0\ \(1\).ico"), default; font-size: xx-large;
+}
+footer {
+    background-color:#8f54ff; color:#300385; font-family: font; position:fixed; bottom: 0; left: 0; right: 0; text-align: center;
+}

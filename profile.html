@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="stylesheet.css">
+<link rel="stylesheet" href="profilesheet.css">
 <head>
   <title>Violet's cool website</title>
   <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
@@ -7,55 +7,61 @@
 
 
 
-<html>
-<center><h1><span id="username-display">Loading...</span></h1></center>
+<div id="profile-card">
+    <h1 id="viewing-username">Loading profile...</h1>
+    <p id="viewing-bio"></p>
+    <p id="viewing-money"></p>
+</div>
 
-  <script>
-const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
+<script>
+const SUPABASE_URL = "https://supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function loadRequestedProfile() {
+async function loadProfile() {
     const urlParams = new URLSearchParams(window.location.search);
+    let targetUsername = urlParams.get('user');
+
     
-    const targetUsername = urlParams.get('user');
+    if (!targetUsername) {
+        const { data: { session } } = await supabaser.auth.getSession();
+        if (session) {
+            const { data: myData } = await supabaser
+                .from('profiles')
+                .select('username')
+                .eq('id', session.user.id)
+                .single();
+            
+            if (myData) {
+                targetUsername = myData.username;
+            }
+        }
+    }
 
     if (!targetUsername) {
-        console.error("No user requested in the URL.");
+        document.getElementById("viewing-username").innerText = "No profile specified. Please log in or view a direct user link.";
         return;
     }
 
     const { data, error } = await supabaser
         .from('profiles')
-        .select('username') 
-        .eq('username', targetUsername)
+        .select('username, bio, money, bgcolor')
+        .eq('username', targetUsername) 
         .single();
 
     if (error || !data) {
-        console.error("Profile not found or error fetching data:", error);
+        document.getElementById("viewing-username").innerText = "User profile not found.";
+        console.error("Profile fetch error:", error);
         return;
     }
 
-    console.log("Loaded profile data:", data);
-}
-loadRequestedProfile()
-async function loadusername() {
-    const { data: { session } } = await supabaser.auth.getSession();
-    if (session) {
-        const { data, error } = await supabaser
-            .from('profiles')
-            .select('username')
-            .eq('id', session.user.id)
-            .single();
-        if (data) {
-            const username = data.username;
-            document.getElementById("username-display").innerText = username;
-        }
+    document.getElementById("viewing-username").innerText = `@${data.username}'s Profile`;
+    document.getElementById("viewing-bio").innerText = data.bio || "No bio written yet.";
+    document.getElementById("viewing-money").innerText = `Coins: ${data.money}`;
+    if (data.bgcolor) {
+        document.body.style.backgroundColor = data.bgcolor;
     }
 }
-loadusername();
+
+loadProfile();
 </script>
-
-
-
-</html>
