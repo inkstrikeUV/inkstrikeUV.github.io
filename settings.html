@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="stylesheet.css">
+<link rel="stylesheet" href="settingsstyle.css">
 <head>
   <title>Settings</title>
   <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
@@ -20,12 +20,13 @@
 <br>basically who can see your profile, public is anyone, friends is well, friends, and private is no-one.<br>
 
 <h2><center><big>Account settings</big></center></h2>
+<br>please make any changes one by one<br>
 <form id='accountsettings'>
-connect email:<input type="text" id="email2"><br><br>
-Change username:<input type="text" id="usernamechange2"><br><br>
-Change password:<input type="text" id="passwordchange2"><br><br><br>
+Connect email:<input type="text" id="email"><br><br>
+Change username:<input type="text" id="usernamechange"><br><br>
+Change password:<input type="text" id="passwordchange"><br><br><br>
 
-Current password(required for any Account changes):<input type="password" id="currentpassword2">
+Current password(required for any Account changes):<input type="password" id="currentpassword">
 <button type="submit">submit</button></form>
 
 <button id="logoutBtn">Sign out?</button>
@@ -132,6 +133,72 @@ Current password(required for any Account changes):<input type="password" id="cu
                 document.getElementById('privacy2').value = "";
             }
         }
+    });
+    document.getElementById('accountsettings').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const oldpass = document.getElementById('currentpassword').value;
+        if (oldpass.trim() === "") {
+        alert("Please enter your current password to proceed.");
+        return;
+    }
+    const { data: { session } } = await supabaser.auth.getSession();
+    if (!session) return;
+        const { error: verifyError } = await supabaser.auth.signInWithPassword({
+        email: session.user.email,
+        password: oldpass
+    });
+    if (verifyError) {
+        alert("Verification failed: Incorrect current password.");
+        return;
+    }
+        if (document.getElementById('usernamechange').value.trim()) {
+            const newusername = document.getElementById('usernamechange').value.trim();
+            const { data: { session } } = await supabaser.auth.getSession();
+            if (session) {
+            const { error } = await supabaser
+                .from('profiles')
+                .update({ username: newusername }) 
+                .eq('id', session.user.id);
+
+            if (error) {
+                alert("Failed to update username: " + error.message);
+                console.error(error);
+            } else {
+                alert("Username updated successfully!");
+                window.location.reload();
+            }
+            }
+        }
+        else if (document.getElementById('passwordchange').value) {
+            const newPassword = document.getElementById('passwordchange').value;
+            const { error } = await supabaser.auth.updateUser({ password: newPassword });
+    
+            if (error) {
+                alert("Failed to update password: " + error.message);
+                console.error(error);
+            } else {
+                alert("Password changed successfully!");
+                window.location.reload();
+            }
+        }
+        else if (document.getElementById('email').value.trim()) {
+            const newemail = document.getElementById('email').value.trim();
+                const { data: { session } } = await supabaser.auth.getSession();
+            if (session) {
+            const { error } = await supabaser
+                .from('profiles')
+                .update({ email: newemail }) 
+                .eq('id', session.user.id);
+
+            if (error) {
+                alert("Failed to update email: " + error.message);
+                console.error(error);
+            } else {
+                alert("Email updated successfully!");
+                window.location.reload();
+            };
+            };
+        };
     });
 </script>
 </html>

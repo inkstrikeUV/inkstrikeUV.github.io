@@ -1,0 +1,28 @@
+@font-face {
+    font-family: font; 
+    src: url('Vifont!!!.ttf'); 
+}
+html {
+    font-family: font; cursor: url("pixil-frame-0\ \(1\).ico"), default; font-size: xx-large;
+}
+footer {
+    background-color:#8f54ff; color:#300385; font-family: font; position:fixed; bottom: 0; left: 0; right: 0; text-align: center;
+}
+body { color:#1f1f1f;background: #350075;
+background: linear-gradient(0deg, rgba(53, 0, 117, 1) 0%, rgba(131, 70, 212, 1) 60%, rgba(237, 222, 255, 1) 100%);
+}
+body2 {
+img {
+  border-radius: 25px;
+  background-color: #474747;
+  padding: 20px;
+  width: 260px;
+  height: 200px;
+}
+
+}
+button {
+  cursor: pointer;
+  font-family: font;
+  font-size: xx-large
+}
