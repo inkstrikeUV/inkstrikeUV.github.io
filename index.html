@@ -2,6 +2,7 @@
 <head>
   <title>Violet's cool website</title>
   <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <style>
@@ -15,10 +16,36 @@
 }</style>
 
 <html>
-  <a href="loginpage.html">sign in</a>
+
+
+  <script>
+const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
+const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
+const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+async function loadusername() {
+    const { data: { session } } = await supabaser.auth.getSession();
+    if (session) {
+        const { data, error } = await supabaser
+            .from('profiles')
+            .select('username')
+            .eq('id', session.user.id)
+            .single();
+        if (data) {
+            money = data.money;
+            document.getElementById("money-display").innerText = money;
+        }
+    } else {
+        window.location.href = "../loginpage.html";
+    }
+}
+</script>
+
+  <div id="loginlink"><a href="loginpage.html">sign in</a></div>
+  <div id="accountlink"><a href=""></a></div>
+
 <h1>
 <center><big><img src="ezgif-6dbe54e04356ef45.gif"></big></center>
-</h1>
+</h1> 
 
 <h2><center><big>
 <a href="#" onclick="goAbout()">About me</a>
