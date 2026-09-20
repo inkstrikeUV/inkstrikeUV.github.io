@@ -6,7 +6,7 @@
 </head>
 
 <html>
-    <a href="settings.html">settings</a>
+    <div id="settingsbutton" style="display: none;"><a href="settings.html">settings</a></div>
 <center>
 <div id="profile-card">
     <h1 id="viewing-username">Loading profile...</h1>
@@ -14,8 +14,9 @@
     <p id="viewing-money"></p>
     <p id="viewing-bio"></p>
 </div>
+<div id="privacymessage"style="display: none;">This user is private</div>
 </center>
-
+</body>
 <script>
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
@@ -25,21 +26,27 @@ async function loadProfile() {
 
     const urlParams = new URLSearchParams(window.location.search);
     let targetUsername = urlParams.get('user');
+    let loggedInUsername = null;
 
-    if (!targetUsername) {
-        const { data: { session } } = await supabaser.auth.getSession();
-        if (session) {
-            const { data: myData } = await supabaser
-                .from('profiles')
-                .select('username')
-                .eq('id', session.user.id)
-                .single();
-            
-            if (myData) {
-                targetUsername = myData.username;
-            }
+    const { data: { session } } = await supabaser.auth.getSession();
+    if (session) {
+        const { data: myData } = await supabaser
+            .from('profiles')
+            .select('username')
+            .eq('id', session.user.id)
+            .single();
+        
+        if (myData) {
+            loggedInUsername = myData.username;
         }
     }
+    if (!targetUsername) {
+        targetUsername = loggedInUsername;
+    }
+    if (loggedInUsername && targetUsername && loggedInUsername === targetUsername) {
+        document.getElementById('settingsbutton').style.display = 'block';
+    }
+
 
     if (!targetUsername) {
         document.getElementById("viewing-username").innerText = "No profile specified. Please log in or view a direct user link.";
@@ -48,7 +55,7 @@ async function loadProfile() {
 
     const { data, error } = await supabaser
         .from('profiles')
-        .select('username, bio, money, bgcolor, avatar_url')
+        .select('username, bio, money, bgcolor, avatar_url, privacy')
         .eq('username', targetUsername) 
         .single();
 
@@ -57,7 +64,11 @@ async function loadProfile() {
         console.error("Profile fetch error:", error);
         return;
     }
-
+    if (data.privacy === "private" && loggedInUsername !== data.username)
+    {
+        document.getElementById('privacymessage').style.display = 'block';
+        return
+    }
     document.getElementById("viewing-username").innerText = `${data.username}`;
     document.getElementById("viewing-money").innerText = `Money: ${data.money}`;
     document.getElementById("viewing-bio").innerText = data.bio || "No bio written yet.";
