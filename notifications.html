@@ -37,7 +37,6 @@ async function loadNotifications() {
         .eq('status', 'requested');
 
     // 3. Fetch rename requests featuring you where display_request is true
-    // (We look for instances where the proposed_name is filled but not yet accepted)
     const { data: renames, error: err2 } = await supabaser
         .from('relationships')
         .select('id, id_1, id_2, proposed_name, profiles!relationships_id_1_fkey(username), target:profiles!relationships_id_2_fkey(username)')
@@ -53,10 +52,7 @@ async function loadNotifications() {
     container.innerHTML = ""; // Clear loader
 
     // Filter out renames that YOU proposed so you aren't approving your own choice
-    const incomingRenames = renames.filter(r => {
-        // If you are id_1 and you initiated it, ignore. If you are id_2, it's incoming.
-        return (r.id_1 !== myId); 
-    });
+    const incomingRenames = renames.filter(r => r.id_1 !== myId); 
 
     if (requests.length === 0 && incomingRenames.length === 0) {
         container.innerHTML = "<p>No new notifications right now! (•‿•)</p>";
@@ -68,10 +64,11 @@ async function loadNotifications() {
         const sender = req.profiles?.username || "Someone";
         const div = document.createElement('div');
         div.className = 'notification-item';
+        div.style = "background: rgba(255,255,255,0.1); padding: 15px; margin: 10px 0; border-radius: 8px;";
         div.innerHTML = `
             <p><strong>${sender}</strong> sent you a friend request!</p>
-            <button onclick="acceptFriend('${req.id}')" style="background:#4CAF50; padding:5px 10px; margin-right:5px;">Accept</button>
-            <button onclick="rejectRelationship('${req.id}')" style="background:#f44336; padding:5px 10px;">Decline</button>
+            <button onclick="acceptFriend('${req.id}')" style="background:#4CAF50; padding:8px 14px; margin-right:5px; border-radius:4px;">Accept</button>
+            <button onclick="rejectRelationship('${req.id}')" style="background:#f44336; padding:8px 14px; border-radius:4px;">Decline</button>
         `;
         container.appendChild(div);
     });
@@ -81,25 +78,25 @@ async function loadNotifications() {
         const sender = ren.profiles?.username || "Your friend";
         const div = document.createElement('div');
         div.className = 'notification-item';
+        div.style = "background: rgba(255,255,255,0.1); padding: 15px; margin: 10px 0; border-radius: 8px;";
         div.innerHTML = `
             <p><strong>${sender}</strong> wants to change your status title to: <em>"${ren.proposed_name}"</em></p>
-            <button onclick="acceptRename('${ren.id}', '${ren.proposed_name}')" style="background:#4CAF50; padding:5px 10px; margin-right:5px;">Approve</button>
-            <button onclick="rejectRename('${ren.id}')" style="background:#f44336; padding:5px 10px;">Decline</button>
+            <button onclick="acceptRename('${ren.id}', '${ren.proposed_name}')" style="background:#4CAF50; padding:8px 14px; margin-right:5px; border-radius:4px;">Approve</button>
+            <button onclick="rejectRename('${ren.id}')" style="background:#f44336; padding:8px 14px; border-radius:4px;">Decline</button>
         `;
         container.appendChild(div);
     });
 }
 
-// Action Functions
 async function acceptFriend(id) {
     const { error } = await supabaser.from('relationships').update({ status: 'friends' }).eq('id', id);
-    if (error) alert("Could not accept");
+    if (error) alert("Could not accept request: " + error.message);
     else location.reload();
 }
 
 async function rejectRelationship(id) {
     const { error } = await supabaser.from('relationships').delete().eq('id', id);
-    if (error) alert("Could not remove request");
+    if (error) alert("Could not remove request: " + error.message);
     else location.reload();
 }
 
@@ -108,7 +105,7 @@ async function acceptRename(id, newName) {
         display_name: newName, 
         display_request: false 
     }).eq('id', id);
-    if (error) alert("Could not approve title name");
+    if (error) alert("Could not approve title name: " + error.message);
     else location.reload();
 }
 
@@ -117,10 +114,11 @@ async function rejectRename(id) {
         proposed_name: null, 
         display_request: false 
     }).eq('id', id);
-    if (error) alert("Could not decline title change");
+    if (error) alert("Could not decline title change: " + error.message);
     else location.reload();
 }
 
+// Kick off the load sequence on page load
 loadNotifications();
 </script>
 
