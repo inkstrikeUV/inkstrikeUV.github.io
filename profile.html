@@ -15,7 +15,7 @@
     <div id="FRIENDSmsg" style="display: none;">FRIENDS!!! YIPPEEE YAYAYAYAY</div>
     <div id="blockbutton" style="display: none;"><button>Block</button></div>
     <div id="settingsbutton" style="display: none;"><a href="settings.html">settings</a></div>
-<div id="profile-card">
+<div id="profile-card2">
     <p id="viewing-money"></p>
     <p id="viewing-bio"></p>
 </div>
@@ -73,6 +73,7 @@ async function loadProfile() {
     if (data.privacy === "private" && loggedInUsername !== data.username)
     {
         document.getElementById('profile-card').style.display = 'none';
+        document.getElementById('profile-card2').style.display = 'none';
         document.getElementById('privacymessage').style.display = 'block';
         return
     }
