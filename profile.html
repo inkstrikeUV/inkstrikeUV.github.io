@@ -70,13 +70,14 @@ async function loadProfile() {
         console.error("Profile fetch error:", error);
         return;
     }
+    document.getElementById("viewing-username").innerText = `${data.username}`;
     if (data.privacy === "private" && loggedInUsername !== data.username)
     {
         document.getElementById('profile-card').style.display = 'none';
         document.getElementById('profile-card2').style.display = 'none';
         document.getElementById('privacymessage').style.display = 'block';
+        return;
     }
-    document.getElementById("viewing-username").innerText = `${data.username}`;
     document.getElementById("viewing-money").innerText = `Money: ${data.money}`;
     document.getElementById("viewing-bio").innerText = data.bio || "No bio written yet.";
     if (data.avatar_url) {
