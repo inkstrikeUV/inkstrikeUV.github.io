@@ -56,7 +56,6 @@ async function loadProfile() {
 
     if (!targetUsername) {
         document.getElementById("viewing-username").innerText = "No profile specified. Please log in or view a direct user link.";
-        return;
     }
 
     const { data, error } = await supabaser
