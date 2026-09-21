@@ -9,12 +9,24 @@ footer {
     background-color:#8f54ff; color:#300385; font-family: font; position:fixed; bottom: 0; left: 0; right: 0; text-align: center;
 }
 header {
-    background-color:#8f54ff; color:#300385; font-family: font; position:fixed; top: 0; left: 0; right: 0; display: flex; justify-content: flex-start; padding: 10px 20px;
+    background-color:#8f54ff; 
+    color:#300385; 
+    font-family: font; 
+    position:fixed; top: 0; left: 0; right: 0; 
+    display: flex; 
+    justify-content: flex-start; 
+    padding: 10px 20px;
+    box-sizing: border-box;
+    z-index: 9999;
 }
 body { color:#1f1f1f;background: #350075;
 background: linear-gradient(0deg, rgba(53, 0, 117, 1) 0%, rgba(131, 70, 212, 1) 60%, rgba(237, 222, 255, 1) 100%); 
 padding: 80px 0;
 margin: 0;
+}
+.main-content {
+    width: 100%;
+    text-align: center;
 }
 body2 {
 img {
