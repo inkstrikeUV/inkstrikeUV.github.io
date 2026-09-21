@@ -55,7 +55,7 @@ async function loadNotifications() {
     const incomingRenames = renames.filter(r => r.id_1 !== myId); 
 
     if (requests.length === 0 && incomingRenames.length === 0) {
-        container.innerHTML = "<p>No new notifications right now! (•‿•)</p>";
+        container.innerHTML = "<p>No new notifications right now!</p>";
         return;
     }
 
@@ -66,7 +66,7 @@ async function loadNotifications() {
         div.className = 'notification-item';
         div.style = "background: rgba(255,255,255,0.1); padding: 15px; margin: 10px 0; border-radius: 8px;";
         div.innerHTML = `
-            <p><strong>${sender}</strong> sent you a friend request!</p>
+            <p><strong>${sender}</strong> wants to be your friend!</p>
             <button onclick="acceptFriend('${req.id}')" style="background:#4CAF50; padding:8px 14px; margin-right:5px; border-radius:4px;">Accept</button>
             <button onclick="rejectRelationship('${req.id}')" style="background:#f44336; padding:8px 14px; border-radius:4px;">Decline</button>
         `;
@@ -80,7 +80,7 @@ async function loadNotifications() {
         div.className = 'notification-item';
         div.style = "background: rgba(255,255,255,0.1); padding: 15px; margin: 10px 0; border-radius: 8px;";
         div.innerHTML = `
-            <p><strong>${sender}</strong> wants to change your status title to: <em>"${ren.proposed_name}"</em></p>
+            <p><strong>${sender}</strong> wants to change your friendship title to: <em>"${ren.proposed_name}"</em></p>
             <button onclick="acceptRename('${ren.id}', '${ren.proposed_name}')" style="background:#4CAF50; padding:8px 14px; margin-right:5px; border-radius:4px;">Approve</button>
             <button onclick="rejectRename('${ren.id}')" style="background:#f44336; padding:8px 14px; border-radius:4px;">Decline</button>
         `;
