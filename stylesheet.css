@@ -20,19 +20,6 @@ header {
     box-sizing: border-box;
     z-index: 9999;
 }
-.gradient-text {
-  background: linear-gradient(180deg, #2b2b2b 0%, #7d7d7d 50%, #e0e0e0 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  display: block;
-  text-align: center;
-  width: 100%;
-
-  filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.7)); 
-}
-
 
 body { 
 background: linear-gradient(0deg, rgba(53, 0, 117, 1) 0%, rgba(131, 70, 212, 1) 60%, rgba(237, 222, 255, 1) 100%); 
@@ -63,4 +50,18 @@ button {
   margin: 0;
   cursor: pointer;
   font-family: font;
+}
+.text-grey-gradient {
+  /* 1. Set up the grey gradient colors */
+  background: linear-gradient(180deg, #2b2b2b 0%, #7d7d7d 50%, #e0e0e0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+
+  /* 2. Text shadow so it stands out clearly on your background */
+  filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.7));
+
+  /* 3. Forces the browser to calculate gradient boundaries within line flows */
+  display: inline;
 }
