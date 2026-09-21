@@ -70,6 +70,36 @@ async function loadProfile() {
         console.error("Profile fetch error:", error);
         return;
     }
+    let relationship = null;
+    if (loggedInUsername && loggedInUsername !== data.username) {
+        const { data: me } = await supabaser.from('profiles').select('id').eq('username', loggedInUsername).single();
+        const { data: target } = await supabaser.from('profiles').select('id').eq('username', data.username).single();
+
+        if (me && target) {
+            const { data: rel } = await supabaser
+                .from('relationships')
+                .select('*')
+                .or(`and(id_1.eq.${me.id},id_2.eq.${target.id}),and(id_1.eq.${target.id},id_2.eq.${me.id})`)
+                .maybeSingle();
+            
+            relationship = rel;
+            if (!relationship) {
+                document.getElementById('friendrequest').style.display = 'block';
+            } else if (relationship.status === 'requested') {
+                document.getElementById('friendrequest').innerHTML = '<button disabled>Request Pending...</button>';
+                document.getElementById('friendrequest').style.display = 'block';
+            } else if (relationship.status === 'friends') {
+                document.getElementById('FRIENDSmsg').style.display = 'block';
+                if (relationship.display_name) {
+                    document.getElementById('FRIENDSmsg').innerText = `FRIENDS (${relationship.display_name})!!! YIPPEEE YAYAYAYAY`;
+                }
+            }
+            document.getElementById('blockbutton').style.display = 'block';
+        }
+    }
+
+
+
     document.getElementById("viewing-username").innerText = `${data.username}`;
     if (data.privacy === "private" && loggedInUsername !== data.username)
     {
@@ -89,6 +119,40 @@ async function loadProfile() {
 };
 
 loadProfile();
+
+document.querySelector('#friendrequest button').addEventListener('click', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetUsername = urlParams.get('user');
+    
+    const { data: { session } } = await supabaser.auth.getSession();
+    if (!session) return alert("You must be logged in to send a friend request!");
+
+    const { data: targetUser } = await supabaser
+        .from('profiles')
+        .select('id')
+        .eq('username', targetUsername)
+        .single();
+
+    if (!targetUser) return alert("User not found.");
+
+    const { error } = await supabaser
+        .from('relationships')
+        .insert({
+            id_1: session.user.id,    
+            id_2: targetUser.id,
+            status: 'requested',
+            display_request: false
+        });
+
+    if (error) {
+        console.error(error);
+        alert("Failed to send friend request.");
+    } else {
+        alert("Friend request sent!");
+        location.reload();
+    }
+});
+
 </script>
 
 
