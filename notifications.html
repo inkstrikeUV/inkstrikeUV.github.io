@@ -6,9 +6,123 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
+<center>
+    <h1>Your Notifications</h1>
+    <div id="notifications-container">
+        <p id="loading-msg">Checking for updates... :3</p>
+    </div>
+</center>
 
+<script>
+const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
+const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
+const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+async function loadNotifications() {
+    const container = document.getElementById('notifications-container');
+    
+    // 1. Authenticate user
+    const { data: { session } } = await supabaser.auth.getSession();
+    if (!session) {
+        container.innerHTML = "<p>Please log in to view your notifications.</p>";
+        return;
+    }
+    const myId = session.user.id;
 
+    // 2. Fetch friend requests where you are the target recipient (id_2)
+    const { data: requests, error: err1 } = await supabaser
+        .from('relationships')
+        .select('id, id_1, profiles!relationships_id_1_fkey(username)')
+        .eq('id_2', myId)
+        .eq('status', 'requested');
+
+    // 3. Fetch rename requests featuring you where display_request is true
+    // (We look for instances where the proposed_name is filled but not yet accepted)
+    const { data: renames, error: err2 } = await supabaser
+        .from('relationships')
+        .select('id, id_1, id_2, proposed_name, profiles!relationships_id_1_fkey(username), target:profiles!relationships_id_2_fkey(username)')
+        .eq('display_request', true)
+        .or(`id_1.eq.${myId},id_2.eq.${myId}`);
+
+    if (err1 || err2) {
+        container.innerHTML = "<p>Error loading updates.</p>";
+        console.error({ err1, err2 });
+        return;
+    }
+
+    container.innerHTML = ""; // Clear loader
+
+    // Filter out renames that YOU proposed so you aren't approving your own choice
+    const incomingRenames = renames.filter(r => {
+        // If you are id_1 and you initiated it, ignore. If you are id_2, it's incoming.
+        return (r.id_1 !== myId); 
+    });
+
+    if (requests.length === 0 && incomingRenames.length === 0) {
+        container.innerHTML = "<p>No new notifications right now! (•‿•)</p>";
+        return;
+    }
+
+    // Render Friend Requests
+    requests.forEach(req => {
+        const sender = req.profiles?.username || "Someone";
+        const div = document.createElement('div');
+        div.className = 'notification-item';
+        div.innerHTML = `
+            <p><strong>${sender}</strong> sent you a friend request!</p>
+            <button onclick="acceptFriend('${req.id}')" style="background:#4CAF50; padding:5px 10px; margin-right:5px;">Accept</button>
+            <button onclick="rejectRelationship('${req.id}')" style="background:#f44336; padding:5px 10px;">Decline</button>
+        `;
+        container.appendChild(div);
+    });
+
+    // Render Title Rename Requests
+    incomingRenames.forEach(ren => {
+        const sender = ren.profiles?.username || "Your friend";
+        const div = document.createElement('div');
+        div.className = 'notification-item';
+        div.innerHTML = `
+            <p><strong>${sender}</strong> wants to change your status title to: <em>"${ren.proposed_name}"</em></p>
+            <button onclick="acceptRename('${ren.id}', '${ren.proposed_name}')" style="background:#4CAF50; padding:5px 10px; margin-right:5px;">Approve</button>
+            <button onclick="rejectRename('${ren.id}')" style="background:#f44336; padding:5px 10px;">Decline</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Action Functions
+async function acceptFriend(id) {
+    const { error } = await supabaser.from('relationships').update({ status: 'friends' }).eq('id', id);
+    if (error) alert("Could not accept");
+    else location.reload();
+}
+
+async function rejectRelationship(id) {
+    const { error } = await supabaser.from('relationships').delete().eq('id', id);
+    if (error) alert("Could not remove request");
+    else location.reload();
+}
+
+async function acceptRename(id, newName) {
+    const { error } = await supabaser.from('relationships').update({ 
+        display_name: newName, 
+        display_request: false 
+    }).eq('id', id);
+    if (error) alert("Could not approve title name");
+    else location.reload();
+}
+
+async function rejectRename(id) {
+    const { error } = await supabaser.from('relationships').update({ 
+        proposed_name: null, 
+        display_request: false 
+    }).eq('id', id);
+    if (error) alert("Could not decline title change");
+    else location.reload();
+}
+
+loadNotifications();
+</script>
 
 <footer><a href="index.html"><center>hoam :3</center></a></footer>
 
