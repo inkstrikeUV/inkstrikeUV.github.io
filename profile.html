@@ -7,8 +7,8 @@
 
 <html>
 <center>
+<h1 id="viewing-username">Loading profile...</h1>
 <div id="profile-card">
-    <h1 id="viewing-username">Loading profile...</h1>
     <img id="viewing-pfp" src="default-pfp.png" style="width:150px; height:150px; border-radius:50%; object-fit:cover;">
 </div>
     <div id="friendrequest" style="display: none;"><button>send friend request</button></div>
@@ -72,6 +72,7 @@ async function loadProfile() {
     }
     if (data.privacy === "private" && loggedInUsername !== data.username)
     {
+        document.getElementById('profile-card').style.display = 'none';
         document.getElementById('privacymessage').style.display = 'block';
         return
     }
