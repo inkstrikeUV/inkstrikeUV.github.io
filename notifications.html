@@ -36,7 +36,7 @@ async function loadNotifications() {
 
     const { data: renames, error: err2 } = await supabaser
         .from('relationships')
-        .select('id, id_1, id_2, proposed_name, profiles!relationships_id_1_fkey(username), target:profiles!relationships_id_2_fkey(username),namerequesterid')
+        .select('id, id_1, id_2, proposed_name, namerequesterid, target:profiles!relationships_namerequesterid_fkey(username)')
         .eq('display_request', true)
         .or(`id_1.eq.${myId},id_2.eq.${myId}`);
 
