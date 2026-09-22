@@ -43,15 +43,19 @@ async function loadFriendsList() {
     // 2. Find target user ID
     const { data: targetUser, error: userError } = await supabaser
         .from('profiles')
-        .select('id')
+        .select('id, bgcolor')
         .eq('username', targetUsername)
         .single();
+        
 
     if (userError || !targetUser) {
         document.getElementById("friends-container").innerText = "User not found.";
         return;
     }
 
+    if (data.bgcolor) {
+        document.body.style.backgroundColor = data.bgcolor;
+    };
     // Check if the current viewer owns this friend list view
     const isOwner = loggedInUserId === targetUser.id;
 
@@ -149,10 +153,12 @@ async function loadFriendsList() {
                 const newNickname = input.value.trim();
                 
                 const { error: updateError } = await supabaser
-                    .from('relationships')
-                    .update({ proposed_name: newNickname || null })
-                    .update({ display_request: true})
-                    .eq('id', matchingRel.id);
+                .from('relationships')
+                .update({ 
+                    proposed_name: newNickname || null, 
+                    display_request: true 
+                })
+                .eq('id', matchingRel.id);
 
                 if (updateError) {
                     console.error(updateError);
