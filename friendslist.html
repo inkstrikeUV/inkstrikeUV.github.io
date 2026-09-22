@@ -60,7 +60,7 @@ async function loadFriendsList() {
 
     const { data: rels, error: relsError } = await supabaser
         .from('relationships')
-        .select('id, id_1, id_2, display_name')
+        .select('id, id_1, id_2, display_name, namerequesterid')
         .eq('status', 'friends')
         .or(`id_1.eq.${targetUser.id},id_2.eq.${targetUser.id}`);
 
