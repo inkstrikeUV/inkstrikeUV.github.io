@@ -53,9 +53,9 @@ async function loadFriendsList() {
         return;
     }
 
-    if (data.bgcolor) {
-        document.body.style.backgroundColor = data.bgcolor;
-    };
+    if (targetUser.bgcolor) {
+        document.body.style.backgroundColor = targetUser.bgcolor;
+    }
     // Check if the current viewer owns this friend list view
     const isOwner = loggedInUserId === targetUser.id;
 
