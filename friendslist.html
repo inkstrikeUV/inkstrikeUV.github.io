@@ -56,10 +56,8 @@ async function loadFriendsList() {
     if (targetUser.bgcolor) {
         document.body.style.backgroundColor = targetUser.bgcolor;
     }
-    // Check if the current viewer owns this friend list view
     const isOwner = loggedInUserId === targetUser.id;
 
-    // 3. Fetch accepted relationships with display names
     const { data: rels, error: relsError } = await supabaser
         .from('relationships')
         .select('id, id_1, id_2, display_name')
@@ -156,7 +154,8 @@ async function loadFriendsList() {
                 .from('relationships')
                 .update({ 
                     proposed_name: newNickname || null, 
-                    display_request: true 
+                    display_request: true,
+                    namerequesterid: loggedInUserId
                 })
                 .eq('id', matchingRel.id);
 
