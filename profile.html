@@ -99,7 +99,7 @@ async function loadProfile() {
             } else if (relationship.status === 'friends') {
                 document.getElementById('FRIENDSmsg').style.display = 'block';
                 if (relationship.display_name) {
-                    document.getElementById('FRIENDSmsg').innerText = `FRIENDS (${relationship.display_name})!!! YIPPEEE YAYAYAYAY`;
+                    document.getElementById('FRIENDSmsg').innerText = `${relationship.display_name}!!! YIPPEEE YAYAYAYAY`;
                 }
             } else if (relationship.status === 'blocked') {
                 document.getElementById('profile-card').style.display = 'none';

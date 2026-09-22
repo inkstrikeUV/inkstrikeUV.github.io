@@ -73,10 +73,8 @@ async function loadFriendsList() {
         return;
     }
 
-    // 4. Extract friend IDs
     const friendIds = rels.map(r => r.id_1 === targetUser.id ? r.id_2 : r.id_1);
 
-    // 5. Fetch profiles for friends
     const { data: friendsProfiles, error: profilesError } = await supabaser
         .from('profiles')
         .select('id, username, avatar_url')
@@ -92,7 +90,6 @@ async function loadFriendsList() {
     container.innerHTML = ""; 
 
     friendsProfiles.forEach(friend => {
-        // Find matching relationship row for this specific friend item
         const matchingRel = rels.find(r => r.id_1 === friend.id || r.id_2 === friend.id);
         const displayName = matchingRel ? matchingRel.display_name : null;
 
@@ -107,7 +104,6 @@ async function loadFriendsList() {
         friendDiv.style.alignItems = "center";
         friendDiv.style.gap = "10px";
 
-        // Row containing image and name details
         const detailsDiv = document.createElement("div");
         detailsDiv.style.display = "flex";
         detailsDiv.style.alignItems = "center";
@@ -135,7 +131,6 @@ async function loadFriendsList() {
         detailsDiv.appendChild(nameSpan);
         friendDiv.appendChild(detailsDiv);
 
-        // Render input context block if looking at own listing view
         if (isOwner && matchingRel) {
             const nicknameForm = document.createElement("div");
             nicknameForm.style.display = "flex";
@@ -155,14 +150,15 @@ async function loadFriendsList() {
                 
                 const { error: updateError } = await supabaser
                     .from('relationships')
-                    .update({ display_name: newNickname || null })
+                    .update({ proposed_name: newNickname || null })
+                    .update({ display_request: true})
                     .eq('id', matchingRel.id);
 
                 if (updateError) {
                     console.error(updateError);
-                    alert("Failed to update nickname.");
+                    alert("Failed to send name request.");
                 } else {
-                    alert("Nickname updated successfully!");
+                    alert("Name request sent successfully!");
                     location.reload();
                 }
             });
