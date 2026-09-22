@@ -1,9 +1,9 @@
 <html>
 <head>
-  <title>Violet's cool website</title>
-  <link rel="stylesheet" href="profilesheet.css">
-  <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Violet's cool website</title>
+    <link rel="stylesheet" href="profilesheet.css">
+    <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <center>
@@ -15,7 +15,7 @@
     <div id="FRIENDSmsg" style="display: none;">FRIENDS!!! YIPPEEE YAYAYAYAY</div>
     <div id="blockbutton" style="display: none;"><button>Block</button></div>
     <div id="settingsbutton" style="display: none;"><a href="settings.html">settings</a></div>
-    <div id="friendslist" style="display: none;"><a href="friendslist.html?user=$username">friends</a></div>
+    <div id="friendslist" style="display: none;"><a id="friends-link" href="#">friends</a></div>
 <div id="profile-card2">
     <p id="viewing-money"></p>
     <p id="viewing-bio"></p>
@@ -71,6 +71,13 @@ async function loadProfile() {
         console.error("Profile fetch error:", error);
         return;
     }
+    const friendsLink = document.getElementById('friends-link');
+    friendsLink.href = `friendslist.html?user=${data.username}`;
+    document.getElementById('friendslist').style.display = 'block';
+    
+
+
+    
     let relationship = null;
     if (loggedInUsername && loggedInUsername !== data.username) {
         const { data: me } = await supabaser.from('profiles').select('id').eq('username', loggedInUsername).single();
@@ -94,21 +101,36 @@ async function loadProfile() {
                 if (relationship.display_name) {
                     document.getElementById('FRIENDSmsg').innerText = `FRIENDS (${relationship.display_name})!!! YIPPEEE YAYAYAYAY`;
                 }
+            } else if (relationship.status === 'blocked') {
+                document.getElementById('profile-card').style.display = 'none';
+                document.getElementById('profile-card2').style.display = 'none';
+                document.getElementById('viewing-username').innerText = "User unavailable.";
+                return;
             }
             document.getElementById('blockbutton').style.display = 'block';
+
         }
     }
-
-
-
     document.getElementById("viewing-username").innerText = `${data.username}`;
-    if (data.privacy === "private" && loggedInUsername !== data.username)
-    {
+    const isOwner = loggedInUsername === data.username;
+    const areFriends = relationship && relationship.status === 'friends';
+    if (!isOwner) {
+    if (data.privacy === "private") {
         document.getElementById('profile-card').style.display = 'none';
         document.getElementById('profile-card2').style.display = 'none';
+        document.getElementById('privacymessage').innerText = "This user is private.";
         document.getElementById('privacymessage').style.display = 'block';
         return;
     }
+    if (data.privacy === "friends" && !areFriends) {
+        document.getElementById('profile-card').style.display = 'none';
+        document.getElementById('profile-card2').style.display = 'none';
+        document.getElementById('privacymessage').innerText = "This profile is only visible to friends.";
+        document.getElementById('privacymessage').style.display = 'block';
+        return;
+    }
+}
+
     document.getElementById("viewing-money").innerText = `Money: ${data.money}`;
     document.getElementById("viewing-bio").innerText = data.bio || "No bio written yet.";
     if (data.avatar_url) {
@@ -153,6 +175,43 @@ document.querySelector('#friendrequest button').addEventListener('click', async 
         location.reload();
     }
 });
+
+const blockBtn = document.querySelector('#blockbutton button');
+if (blockBtn) {
+    blockBtn.addEventListener('click', async () => {
+        if (!confirm("Are you sure you want to block this user?")) return;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetUsername = urlParams.get('user');
+
+        const { data: { session } } = await supabaser.auth.getSession();
+        if (!session) return alert("You must be logged in to block a user!");
+
+        const { data: targetUser } = await supabaser
+            .from('profiles')
+            .select('id')
+            .eq('username', targetUsername)
+            .single();
+
+        if (!targetUser) return alert("User not found.");
+
+        const { error } = await supabaser
+            .from('relationships')
+            .upsert({
+                id_1: session.user.id,
+                id_2: targetUser.id,
+                status: 'blocked'
+            }, { onConflict: 'id_1,id_2' });
+
+        if (error) {
+            console.error(error);
+            alert("Failed to block user.");
+        } else {
+            alert("User blocked!");
+            location.reload();
+        }
+    });
+}
 
 </script>
 

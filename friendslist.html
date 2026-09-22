@@ -1,79 +1,182 @@
 <html>
 <head>
-  <title>Violet's cool website</title>
-  <link rel="stylesheet" href="profilesheet.css">
-  <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Violet's cool website</title>
+    <link rel="stylesheet" href="profilesheet.css">
+    <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <center>
-<h1 id="viewing-username">Loading profile...</h1>
-<div id="privacymessage"style="display: none;">This user is private</div>
-
+    <h1 id="list-title">Friends</h1>
+    
+    <div id="friends-container">Loading friends...</div>
+    
+    <br><br>
+    <a id="back-to-profile" href="#" style="color:#300385">Back to profile</a>
 </center>
 </body>
+
 <script>
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function loadProfile() {
-
+async function loadFriendsList() {
     const urlParams = new URLSearchParams(window.location.search);
-    let targetUsername = urlParams.get('user');
-    let loggedInUsername = null;
+    const targetUsername = urlParams.get('user');
 
+    if (!targetUsername) {
+        document.getElementById("friends-container").innerText = "No user specified.";
+        return;
+    }
+
+    document.getElementById("list-title").innerText = `${targetUsername}'s Friends`;
+    document.getElementById("back-to-profile").href = `profile.html?user=${targetUsername}`;
+
+    // 1. Get Logged in user info
+    let loggedInUserId = null;
     const { data: { session } } = await supabaser.auth.getSession();
     if (session) {
-        const { data: myData } = await supabaser
-            .from('profiles')
-            .select('username')
-            .eq('id', session.user.id)
-            .single();
-        
-        if (myData) {
-            loggedInUsername = myData.username;
-        }
-    }
-    if (!targetUsername) {
-        targetUsername = loggedInUsername;
+        loggedInUserId = session.user.id;
     }
 
-
-    if (!targetUsername) {
-        document.getElementById("viewing-username").innerText = "No profile specified. Please log in or view a direct user link.";
-        return;
-    }
-
-    const { data, error } = await supabaser
+    // 2. Find target user ID
+    const { data: targetUser, error: userError } = await supabaser
         .from('profiles')
-        .select('username, bio, money, bgcolor, avatar_url, privacy')
-        .eq('username', targetUsername) 
+        .select('id')
+        .eq('username', targetUsername)
         .single();
 
-    if (error || !data) {
-        document.getElementById("viewing-username").innerText = "User profile not found.";
-        console.error("Profile fetch error:", error);
+    if (userError || !targetUser) {
+        document.getElementById("friends-container").innerText = "User not found.";
         return;
     }
 
+    // Check if the current viewer owns this friend list view
+    const isOwner = loggedInUserId === targetUser.id;
 
+    // 3. Fetch accepted relationships with display names
+    const { data: rels, error: relsError } = await supabaser
+        .from('relationships')
+        .select('id, id_1, id_2, display_name')
+        .eq('status', 'friends')
+        .or(`id_1.eq.${targetUser.id},id_2.eq.${targetUser.id}`);
 
-    document.getElementById("viewing-username").innerText = `${data.username}`;
-    if (data.privacy === "private" && loggedInUsername !== data.username)
-    {
-        document.getElementById('profile-card').style.display = 'none';
-        document.getElementById('profile-card2').style.display = 'none';
-        document.getElementById('privacymessage').style.display = 'block';
+    if (relsError) {
+        console.error(relsError);
+        document.getElementById("friends-container").innerText = "Error loading relationships.";
         return;
     }
-    if (data.bgcolor) {
-        document.body.style.backgroundColor = data.bgcolor;
-    };
-};
 
-loadProfile();
+    if (!rels || rels.length === 0) {
+        document.getElementById("friends-container").innerText = "No friends found yet! :(";
+        return;
+    }
 
+    // 4. Extract friend IDs
+    const friendIds = rels.map(r => r.id_1 === targetUser.id ? r.id_2 : r.id_1);
+
+    // 5. Fetch profiles for friends
+    const { data: friendsProfiles, error: profilesError } = await supabaser
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', friendIds);
+
+    if (profilesError) {
+        console.error(profilesError);
+        document.getElementById("friends-container").innerText = "Error loading friend profiles.";
+        return;
+    }
+
+    const container = document.getElementById("friends-container");
+    container.innerHTML = ""; 
+
+    friendsProfiles.forEach(friend => {
+        // Find matching relationship row for this specific friend item
+        const matchingRel = rels.find(r => r.id_1 === friend.id || r.id_2 === friend.id);
+        const displayName = matchingRel ? matchingRel.display_name : null;
+
+        const friendDiv = document.createElement("div");
+        friendDiv.style.margin = "15px";
+        friendDiv.style.padding = "10px";
+        friendDiv.style.border = "1px solid #300385";
+        friendDiv.style.borderRadius = "8px";
+        friendDiv.style.width = "320px";
+        friendDiv.style.display = "flex";
+        friendDiv.style.flexDirection = "column";
+        friendDiv.style.alignItems = "center";
+        friendDiv.style.gap = "10px";
+
+        // Row containing image and name details
+        const detailsDiv = document.createElement("div");
+        detailsDiv.style.display = "flex";
+        detailsDiv.style.alignItems = "center";
+        detailsDiv.style.width = "100%";
+        detailsDiv.style.gap = "15px";
+
+        const img = document.createElement("img");
+        img.src = friend.avatar_url || "default-pfp.png";
+        img.style.width = "40px";
+        img.style.height = "40px";
+        img.style.borderRadius = "50%";
+        img.style.objectFit = "cover";
+
+        const nameSpan = document.createElement("span");
+        const formattedLabel = displayName ? `${friend.username} (${displayName})` : friend.username;
+        
+        const link = document.createElement("a");
+        link.href = `profile.html?user=${friend.username}`;
+        link.innerText = formattedLabel;
+        link.style.fontWeight = "bold";
+        link.style.color = "#300385";
+        nameSpan.appendChild(link);
+
+        detailsDiv.appendChild(img);
+        detailsDiv.appendChild(nameSpan);
+        friendDiv.appendChild(detailsDiv);
+
+        // Render input context block if looking at own listing view
+        if (isOwner && matchingRel) {
+            const nicknameForm = document.createElement("div");
+            nicknameForm.style.display = "flex";
+            nicknameForm.style.gap = "5px";
+            nicknameForm.style.width = "100%";
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.placeholder = "Set friend nickname...";
+            input.value = displayName || "";
+            input.style.flex = "1";
+
+            const btn = document.createElement("button");
+            btn.innerText = "Save";
+            btn.addEventListener('click', async () => {
+                const newNickname = input.value.trim();
+                
+                const { error: updateError } = await supabaser
+                    .from('relationships')
+                    .update({ display_name: newNickname || null })
+                    .eq('id', matchingRel.id);
+
+                if (updateError) {
+                    console.error(updateError);
+                    alert("Failed to update nickname.");
+                } else {
+                    alert("Nickname updated successfully!");
+                    location.reload();
+                }
+            });
+
+            nicknameForm.appendChild(input);
+            nicknameForm.appendChild(btn);
+            friendDiv.appendChild(nicknameForm);
+        }
+
+        container.appendChild(friendDiv);
+    });
+}
+
+loadFriendsList();
 </script>
 <footer><a href="../index.html" style="color:#300385"><center>hoam :3</center></a></footer>
 </html>
