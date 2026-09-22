@@ -36,9 +36,10 @@ async function loadNotifications() {
 
     const { data: renames, error: err2 } = await supabaser
         .from('relationships')
-        .select('id, id_1, id_2, proposed_name, namerequesterid, target:profiles!relationships_namerequesterid_fkey(username)')
+        .select('id, id_1, id_2, proposed_name, namerequesterid, target:profiles!namerequesterid(username)') // <-- Changed constraint name to column name
         .eq('display_request', true)
         .or(`id_1.eq.${myId},id_2.eq.${myId}`);
+
 
     if (err1 || err2) {
         container.innerHTML = "<p>Error loading updates.</p>";
@@ -72,7 +73,7 @@ async function loadNotifications() {
 
     // Render Title Rename Requests
     incomingRenames.forEach(ren => {
-        const sender = ren.profiles?.username || "Your friend";
+        const sender = ren.target?.username || "Your friend";
         const div = document.createElement('div');
         div.className = 'notification-item';
         div.style = "background: rgba(255,255,255,0.1); padding: 15px; margin: 10px 0; border-radius: 8px;";
