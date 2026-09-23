@@ -28,7 +28,7 @@
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
 
 const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get('room');
