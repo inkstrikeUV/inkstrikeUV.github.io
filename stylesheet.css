@@ -60,6 +60,6 @@ a, button, .clickable {
   cursor: url('pixil-frame-1.png'), pointer;
 }
 
-input[type="text"] {
+textarea, input[type="text"] {
   cursor: url('pixil-frame-2.png'), text;
 }
