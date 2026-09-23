@@ -44,17 +44,37 @@ async function getUserProfile(userId) {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('username, avatar_url')
+    .select('username, avatar_url, bgcolor')
     .eq('id', userId)
     .single();
 
   if (error || !data) {
-    return { username: "Unknown User", avatar_url: "default-pfp.png" };
+    return { username: "Unknown User", avatar_url: "default-pfp.png", bgcolor: "#8f54ff" };
   }
 
   profileCache[userId] = data;
   return data;
 }
+
+async function appendMessage(msg) {
+  const senderProfile = await getUserProfile(msg.sender_id);
+  const pfpSrc = senderProfile.avatar_url || 'default-pfp.png';
+  const userColor = senderProfile.bgcolor || '#8f54ff';
+
+  const div = document.createElement('div');
+  div.className = 'message';
+  div.innerHTML = `
+    <a href="profile.html?user=${senderProfile.username}">
+      <img class="chat-pfp" src="${pfpSrc}" alt="${senderProfile.username}'s pfp">
+    </a>
+    <span class="meta">[#${msg.sequence_number}] ${senderProfile.username}:</span> 
+    <span class="msg-content" style="color: ${userColor};">${msg.content}</span>
+  `;
+  
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 
 async function initializeChatroom() {
   const { data: { user } } = await supabase.auth.getUser();
