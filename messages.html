@@ -4,7 +4,6 @@
   <link rel="stylesheet" href="stylesheet.css">
   <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 </head>
 <body>
 
@@ -28,7 +27,8 @@
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 
-supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
+// Configured as 'db' to prevent naming conflicts with the global script tag window resource
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
 
 const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get('room');
@@ -42,7 +42,7 @@ const profileCache = {};
 async function getUserProfile(userId) {
   if (profileCache[userId]) return profileCache[userId];
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('profiles')
     .select('username, avatar_url, bgcolor')
     .eq('id', userId)
@@ -63,21 +63,23 @@ async function appendMessage(msg) {
 
   const div = document.createElement('div');
   div.className = 'message';
+  
+  div.style.setProperty('--user-color', userColor);
+
   div.innerHTML = `
     <a href="profile.html?user=${senderProfile.username}">
       <img class="chat-pfp" src="${pfpSrc}" alt="${senderProfile.username}'s pfp">
     </a>
     <span class="meta">[#${msg.sequence_number}] ${senderProfile.username}:</span> 
-    <span class="msg-content" style="color: ${userColor};">${msg.content}</span>
+    <span class="msg-content">${msg.content}</span>
   `;
   
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-
 async function initializeChatroom() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await db.auth.getUser();
   if (!user) {
     alert("Please sign in first!");
     window.location.href = "loginpage.html";
@@ -89,7 +91,7 @@ async function initializeChatroom() {
   document.getElementById('accountlink').style.display = 'block';
   document.getElementById('username-display').innerText = myProfile.username;
 
-  const { data: room, error } = await supabase
+  const { data: room, error } = await db
     .from('chatrooms')
     .select('*')
     .eq('id', roomId)
@@ -107,7 +109,7 @@ async function initializeChatroom() {
 }
 
 async function loadMessages() {
-  const { data: fetchedMessages } = await supabase
+  const { data: fetchedMessages } = await db
     .from('messages')
     .select('*')
     .eq('chatroom_id', roomId)
@@ -121,7 +123,7 @@ async function loadMessages() {
 }
 
 async function sendMessage(text) {
-  const { error } = await supabase
+  const { error } = await db
     .from('messages')
     .insert([{ chatroom_id: roomId, content: text }]);
 
@@ -131,7 +133,7 @@ async function sendMessage(text) {
 }
 
 function listenForNewMessages() {
-  supabase
+  db
     .channel(`room-${roomId}`)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chatroom_id=eq.${roomId}` }, 
       async (payload) => {
@@ -139,24 +141,6 @@ function listenForNewMessages() {
       }
     )
     .subscribe();
-}
-
-async function appendMessage(msg) {
-  const senderProfile = await getUserProfile(msg.sender_id);
-  const pfpSrc = senderProfile.avatar_url || 'default-pfp.png';
-
-  const div = document.createElement('div');
-  div.className = 'message';
-  div.innerHTML = `
-    <a href="profile.html?user=${senderProfile.username}">
-      <img class="chat-pfp" src="${pfpSrc}" alt="${senderProfile.username}'s pfp">
-    </a>
-    <span class="meta">[#${msg.sequence_number}] ${senderProfile.username}:</span> 
-    <span>${msg.content}</span>
-  `;
-  
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 messageForm.addEventListener('submit', async (e) => {
