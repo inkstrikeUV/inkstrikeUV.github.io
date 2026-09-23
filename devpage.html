@@ -1,0 +1,33 @@
+<h1>WIP PAGES</h1>
+<a href="messages.html">messages</a>
+<script>
+const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
+const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
+const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function load() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const { data: { session } } = await supabaser.auth.getSession();
+    
+    if (!session) {
+        alert("hey you aint meant to be e're! get 'em boys!!");
+        window.location.href = "index.html";
+        return;
+    }
+
+    const { data: myData, error } = await supabaser
+        .from('profiles')
+        .select('username')
+        .eq('id', session.user.id)
+        .single();
+
+    if (myData && myData.username === "inkstrikeUV") {
+        return; 
+    } else {
+        alert("hey you aint meant to be e're! get 'em boys!!");
+        window.location.href = "index.html"; 
+    }
+}
+
+load();
+</script>

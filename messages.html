@@ -1,0 +1,160 @@
+<html>
+<head>
+  <title>Violet's cool website</title>
+  <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    #chat-box { border: 2px solid #300385; height: 350px; overflow-y: auto; padding: 10px; margin: 15px 0; background: #fff; }
+    .message { display: flex; align-items: center; margin-bottom: 12px; font-family: sans-serif; }
+    .chat-pfp { width: 30px; height: 30px; border-radius: 50%; margin-right: 8px; object-fit: cover; }
+    .meta { color: #300385; font-weight: bold; font-size: 0.85em; margin-right: 5px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div id="loginlink"><a href="loginpage.html" style="color:#300385">sign in</a></div>
+  <div id="accountlink" style="display: none;"><a href="profile.html" style="color:#300385"><span id="username-display">Loading...</span></a></div>
+  <a href="notifications.html"><img src="bell.png" height="50" width="50"></a>
+</header>
+
+<main style="padding: 20px;">
+  <h2>Chatroom</h2>
+  <div id="chat-box">Loading conversation...</div>
+  
+  <form id="message-form">
+    <input type="text" id="message-input" placeholder="Type your message here..." required style="width: 75%; padding: 8px;">
+    <button type="submit" style="padding: 8px 15px; background-color: #300385; color: white; border: none; cursor: pointer;">Send</button>
+  </form>
+</main>
+
+<script>
+const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
+const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get('room');
+
+const chatBox = document.getElementById('chat-box');
+const messageForm = document.getElementById('message-form');
+const messageInput = document.getElementById('message-input');
+
+const profileCache = {};
+
+async function getUserProfile(userId) {
+  if (profileCache[userId]) return profileCache[userId];
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('username, avatar_url')
+    .eq('id', userId)
+    .single();
+
+  if (error || !data) {
+    return { username: "Unknown User", avatar_url: "default-pfp.png" };
+  }
+
+  profileCache[userId] = data;
+  return data;
+}
+
+async function initializeChatroom() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    alert("Please sign in first!");
+    window.location.href = "loginpage.html";
+    return;
+  }
+
+  const myProfile = await getUserProfile(user.id);
+  document.getElementById('loginlink').style.display = 'none';
+  document.getElementById('accountlink').style.display = 'block';
+  document.getElementById('username-display').innerText = myProfile.username;
+
+  const { data: room, error } = await supabase
+    .from('chatrooms')
+    .select('*')
+    .eq('id', roomId)
+    .single();
+
+  if (error || !room) {
+    alert("Access Denied: You do not have permission to view this chatroom.");
+    window.location.href = "index.html"; 
+    return;
+  }
+
+  chatBox.innerHTML = ''; 
+  loadMessages();
+  listenForNewMessages();
+}
+
+async function loadMessages() {
+  const { data: fetchedMessages } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('chatroom_id', roomId)
+    .order('sequence_number', { ascending: true });
+
+  if (fetchedMessages) {
+    for (const msg of fetchedMessages) {
+      await appendMessage(msg);
+    }
+  }
+}
+
+async function sendMessage(text) {
+  const { error } = await supabase
+    .from('messages')
+    .insert([{ chatroom_id: roomId, content: text }]);
+
+  if (error) {
+    alert("Could not send message.");
+  }
+}
+
+function listenForNewMessages() {
+  supabase
+    .channel(`room-${roomId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chatroom_id=eq.${roomId}` }, 
+      async (payload) => {
+        await appendMessage(payload.new);
+      }
+    )
+    .subscribe();
+}
+
+async function appendMessage(msg) {
+  const senderProfile = await getUserProfile(msg.sender_id);
+  const pfpSrc = senderProfile.avatar_url || 'default-pfp.png';
+
+  const div = document.createElement('div');
+  div.className = 'message';
+  div.innerHTML = `
+    <a href="profile.html?user=${senderProfile.username}">
+      <img class="chat-pfp" src="${pfpSrc}" alt="${senderProfile.username}'s pfp">
+    </a>
+    <span class="meta">[#${msg.sequence_number}] ${senderProfile.username}:</span> 
+    <span>${msg.content}</span>
+  `;
+  
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+messageForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = messageInput.value.trim();
+  if (text) {
+    messageInput.value = '';
+    await sendMessage(text);
+  }
+});
+
+initializeChatroom();
+</script>
+
+<footer><a href="../index.html" style="color:#300385"><center>hoam :3</center></a></footer>
+</body>
+</html>
