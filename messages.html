@@ -114,26 +114,19 @@ async function initializeChatroom() {
   listenForNewMessages();
 }
 
-function listenForNewMessages() {
-  db
-    .channel(`room-${roomId}`)
-    .on('postgres_changes', { 
-      event: 'INSERT', 
-      schema: 'public', 
-      table: 'messages'
-    }, 
-      async (payload) => {
-        if (payload.new && payload.new.chatroom_id === roomId) {
-            console.log('A message was just sent by someone in this room!');
-            location.reload();
-        }
-      }
-    )
-    .subscribe((status) => {
-        console.log("Realtime listener active:", status);
-    });
-}
+async function loadMessages() {
+  const { data: fetchedMessages } = await db
+    .from('messages')
+    .select('*')
+    .eq('chatroom_id', roomId)
+    .order('sequence_number', { ascending: true });
 
+  if (fetchedMessages) {
+    for (const msg of fetchedMessages) {
+      await appendMessage(msg);
+    }
+  }
+}
 
 async function sendMessage(text) {
   const { error } = await db
@@ -157,13 +150,13 @@ function listenForNewMessages() {
     }, 
       async (payload) => {
         if (payload.new && payload.new.chatroom_id === roomId) {
-            console.log('Realtime message caught!', payload.new);
-            await appendMessage(payload.new);
+            console.log('A message was just sent by someone in this room!');
+            location.reload();
         }
       }
     )
     .subscribe((status) => {
-        console.log("Realtime subscription status:", status);
+        console.log("Realtime listener active:", status);
     });
 }
 
