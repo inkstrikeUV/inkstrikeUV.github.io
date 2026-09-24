@@ -13,6 +13,9 @@
 </div>
     <div id="friendrequest" style="display: none;"><button>send friend request</button></div>
     <div id="FRIENDSmsg" style="display: none;">FRIENDS!!! YIPPEEE YAYAYAYAY</div>
+    <div id="direct-message" style="display: none; margin-top: 15px;">
+    <button id="dm-button" style="background-color: #8f54ff; color: #ffffff; padding: 10px 20px; border: 2px solid #300385; border-radius: 8px; font-family: font;">💬 Message User</button>
+    </div>
     <div id="blockbutton" style="display: none;"><button>Block</button></div>
     <div id="settingsbutton" style="display: none;"><a href="settings.html">settings</a></div>
 <div id="profile-card2">
@@ -28,6 +31,30 @@
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Helper function to create the 1-on-1 private chatroom dynamically if it doesn't exist yet
+async function ensureChatroomExists(roomId, myId, targetId) {
+    const { data: existingRoom } = await supabaser
+        .from('chatrooms')
+        .select('id')
+        .eq('id', roomId)
+        .maybeSingle();
+    
+    if (!existingRoom) {
+        // 1. Create the base private chatroom row entry
+        await supabaser.from('chatrooms').insert({ 
+            id: roomId, 
+            privacy_type: 'private', 
+            creator_id: myId 
+        });
+        
+        // 2. Add both friends to the access checklist table to satisfy Row Level Security (RLS)
+        await supabaser.from('chatroom_allowed_users').insert([
+            { chatroom_id: roomId, user_id: myId },
+            { chatroom_id: roomId, user_id: targetId }
+        ]);
+    }
+}
 
 async function loadProfile() {
 
@@ -101,6 +128,18 @@ async function loadProfile() {
                 if (relationship.display_name) {
                     document.getElementById('FRIENDSmsg').innerText = `${relationship.display_name}!!! YIPPEEE YAYAYAYAY`;
                 }
+                const ids = [me.id, target.id].sort();
+                const oneOnOneRoomId = `dm_${ids[0]}_${ids[1]}`;
+                
+                const dmContainer = document.getElementById('direct-message');
+                const dmButton = document.getElementById('dm-button');
+                dmContainer.style.display = 'block';
+                dmButton.onclick = async () => {
+                    dmButton.innerText = "Connecting...";
+                    dmButton.disabled = true;
+                    await ensureChatroomExists(oneOnOneRoomId, me.id, target.id);
+                    window.location.href = `messages.html?room=${oneOnOneRoomId}`;
+                };
             } else if (relationship.status === 'blocked') {
                 document.getElementById('profile-card').style.display = 'none';
                 document.getElementById('profile-card2').style.display = 'none';
@@ -207,7 +246,7 @@ if (blockBtn) {
             console.error(error);
             alert("Failed to block user.");
         } else {
-            alert("User blocked!");
+            alert("User blocked successfully.");
             location.reload();
         }
     });
