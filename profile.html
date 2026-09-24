@@ -40,17 +40,28 @@ async function ensureChatroomExists(roomId, myId, targetId) {
         .maybeSingle();
     
     if (!existingRoom) {
-        await supabaser.from('chatrooms').insert({ 
+        const { error: roomError } = await supabaser.from('chatrooms').insert({ 
             id: roomId, 
             privacy_type: 'private', 
             creator_id: myId 
         });
         
-        await supabaser.from('chatroom_allowed_users').insert([
+        if (roomError) {
+            console.error("Chatroom Insert Error:", roomError);
+            alert("Database blocked room creation: " + roomError.message);
+            return false;
+        }
+        const { error: allowedError } = await supabaser.from('chatroom_allowed_users').insert([
             { chatroom_id: roomId, user_id: myId },
             { chatroom_id: roomId, user_id: targetId }
         ]);
+        if (allowedError) {
+            console.error("Allowed Users Insert Error:", allowedError);
+            alert("Database blocked adding users to room: " + allowedError.message);
+            return false;
+        }
     }
+    return true;
 }
 
 async function loadProfile() {
