@@ -23,3 +23,11 @@ button {
   margin: 0;
   cursor: pointer;
 }
+
+body:active {
+  cursor: url("Diamond_Pickaxe_rotat.png"), default;
+}
+body {
+  user-select: none; 
+  -webkit-user-select: none; 
+}
