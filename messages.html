@@ -69,7 +69,7 @@ async function appendMessage(msg) {
     <a href="profile.html?user=${senderProfile.username}">
       <img class="chat-pfp" src="${pfpSrc}" alt="${senderProfile.username}'s pfp">
     </a>
-    <span class="meta">[#${msg.sequence_number}] ${senderProfile.username}:</span> 
+    <span class="meta">${senderProfile.username}:</span> 
     <span class="msg-content">${msg.content}</span>
   `;
   
@@ -135,6 +135,8 @@ async function sendMessage(text) {
 
   if (error) {
     alert("Could not send message.");
+  } else {
+    location.reload();
   }
 }
 
