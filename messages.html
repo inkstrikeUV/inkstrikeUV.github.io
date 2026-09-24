@@ -27,7 +27,6 @@
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 
-// Configured as 'db' to prevent naming conflicts with the global script tag window resource
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -91,6 +90,13 @@ async function initializeChatroom() {
   document.getElementById('accountlink').style.display = 'block';
   document.getElementById('username-display').innerText = myProfile.username;
 
+  if (roomId && roomId.startsWith('dm_')) {
+      const heading = document.querySelector('h2');
+      if (heading) {
+          heading.innerHTML = `Chatroom <span style="font-size: 0.5em; background: #8f54ff; color: #fff; padding: 4px 10px; border-radius: 12px; margin-left: 10px; vertical-align: middle;">🔒 1-on-1 DM</span>`;
+      }
+  }
+
   const { data: room, error } = await db
     .from('chatrooms')
     .select('*')
@@ -98,9 +104,9 @@ async function initializeChatroom() {
     .single();
 
   if (error || !room) {
-    alert("Access Denied: You do not have permission to view this chatroom.");
-    window.location.href = "index.html"; 
-    return;
+      alert("Access Denied: You do not have permission to view this chatroom.");
+      window.location.href = "index.html"; 
+      return;
   }
 
   chatBox.innerHTML = ''; 
