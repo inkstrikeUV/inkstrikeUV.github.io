@@ -32,7 +32,6 @@ const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Helper function to create the 1-on-1 private chatroom dynamically if it doesn't exist yet
 async function ensureChatroomExists(roomId, myId, targetId) {
     const { data: existingRoom } = await supabaser
         .from('chatrooms')
@@ -41,14 +40,12 @@ async function ensureChatroomExists(roomId, myId, targetId) {
         .maybeSingle();
     
     if (!existingRoom) {
-        // 1. Create the base private chatroom row entry
         await supabaser.from('chatrooms').insert({ 
             id: roomId, 
             privacy_type: 'private', 
             creator_id: myId 
         });
         
-        // 2. Add both friends to the access checklist table to satisfy Row Level Security (RLS)
         await supabaser.from('chatroom_allowed_users').insert([
             { chatroom_id: roomId, user_id: myId },
             { chatroom_id: roomId, user_id: targetId }
@@ -123,14 +120,13 @@ async function loadProfile() {
             } else if (relationship.status === 'requested') {
                 document.getElementById('friendrequest').innerHTML = '<button disabled>Request Pending...</button>';
                 document.getElementById('friendrequest').style.display = 'block';
-            } else if (relationship.status === 'friends') {
+                } else if (relationship.status === 'friends') {
                 document.getElementById('FRIENDSmsg').style.display = 'block';
                 if (relationship.display_name) {
                     document.getElementById('FRIENDSmsg').innerText = `${relationship.display_name}!!! YIPPEEE YAYAYAYAY`;
                 }
                 const ids = [me.id, target.id].sort();
                 const oneOnOneRoomId = `dm_${ids[0]}_${ids[1]}`;
-                
                 const dmContainer = document.getElementById('direct-message');
                 const dmButton = document.getElementById('dm-button');
                 dmContainer.style.display = 'block';
