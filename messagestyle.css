@@ -71,9 +71,10 @@ textarea, input[type="text"] {
   overflow-y: auto;
   padding: 15px;
   margin: 15px 0;
-  background-color: #000000; /* Pure black chat container background */
+  background-color: #000000; 
   border-radius: 8px;
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+  font-size: large; 
 }
 
 .message {
@@ -84,17 +85,16 @@ textarea, input[type="text"] {
   gap: 8px;
   padding: 4px 8px;
   transition: transform 0.1s ease;
+  font-size: medium; 
 }
 
-/* 🌟 THE HOVER MECHANIC! 🌟 */
-/* When you hover over a message row, it highlights the text and labels into pure glowing white */
 .message:hover .msg-content {
-  color: #ffffff !important; /* Overrides the unique profile color and changes it to white */
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6); /* Optional subtle text glow */
+  color: #ffffff !important; 
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6); 
 }
 
 .message:hover .meta {
-  color: #ffffff; /* Changes the sequence tag and username to white too */
+  color: #ffffff !important; 
 }
 
 .chat-pfp {
@@ -112,7 +112,7 @@ textarea, input[type="text"] {
 }
 
 .meta {
-  color: #8f54ff; /* Default light purple username color against the black box */
+  color: #8f54ff; 
   font-weight: bold;
   font-size: 0.9em;
   white-space: nowrap;
@@ -120,6 +120,7 @@ textarea, input[type="text"] {
 }
 
 .msg-content {
+  color: var(--user-color, #8f54ff); 
   font-size: 0.95em;
-  transition: color 0.15s ease; /* Makes the transition to white look perfectly smooth */
+  transition: color 0.15s ease; 
 }
