@@ -98,9 +98,11 @@ textarea, input[type="text"] {
 }
 
 .chat-pfp {
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
+  width: 35px !important;
+  height: 35px !important;
+  background-color: transparent !important; 
+  padding: 0 !important;     
+  border-radius: 50% !important;
   object-fit: cover;
   border: 1px solid #300385;
   display: block;

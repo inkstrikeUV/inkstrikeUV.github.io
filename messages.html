@@ -141,13 +141,20 @@ async function sendMessage(text) {
 function listenForNewMessages() {
   db
     .channel(`room-${roomId}`)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chatroom_id=eq.${roomId}` }, 
+    .on('postgres_changes', { 
+      event: 'INSERT', 
+      schema: 'public', 
+      table: 'messages', 
+      filter: `chatroom_id=eq.${roomId}` 
+    }, 
       async (payload) => {
+        console.log('New message received live!', payload.new);
         await appendMessage(payload.new);
       }
     )
     .subscribe();
 }
+
 
 messageForm.addEventListener('submit', async (e) => {
   e.preventDefault();
