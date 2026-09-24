@@ -144,8 +144,13 @@ async function loadProfile() {
                 dmButton.onclick = async () => {
                     dmButton.innerText = "Connecting...";
                     dmButton.disabled = true;
-                    await ensureChatroomExists(oneOnOneRoomId, me.id, target.id);
-                    window.location.href = `messages.html?room=${oneOnOneRoomId}`;
+                    const success = await ensureChatroomExists(oneOnOneRoomId, me.id, target.id);
+                                        if (success) {
+                        window.location.href = `messages.html?room=${oneOnOneRoomId}`;
+                    } else {
+                        dmButton.innerText = "💬 Message User";
+                        dmButton.disabled = false;
+                    }
                 };
             } else if (relationship.status === 'blocked') {
                 document.getElementById('profile-card').style.display = 'none';
