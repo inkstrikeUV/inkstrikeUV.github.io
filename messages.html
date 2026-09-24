@@ -93,7 +93,7 @@ async function initializeChatroom() {
   if (roomId && roomId.startsWith('dm_')) {
       const heading = document.querySelector('h2');
       if (heading) {
-          heading.innerHTML = `Chatroom <span style="font-size: 0.5em; background: #8f54ff; color: #fff; padding: 4px 10px; border-radius: 12px; margin-left: 10px; vertical-align: middle;">🔒 1-on-1 DM</span>`;
+          heading.innerHTML = `Chatroom <span style="font-size: 0.5em; background: #8f54ff; color: #fff; padding: 4px 10px; border-radius: 12px; margin-left: 10px; vertical-align: middle;">Direct Message</span>`;
       }
   }
 
@@ -144,15 +144,18 @@ function listenForNewMessages() {
     .on('postgres_changes', { 
       event: 'INSERT', 
       schema: 'public', 
-      table: 'messages', 
-      filter: `chatroom_id=eq.${roomId}` 
+      table: 'messages'
     }, 
       async (payload) => {
-        console.log('New message received live!', payload.new);
-        await appendMessage(payload.new);
+        if (payload.new && payload.new.chatroom_id === roomId) {
+            console.log('Realtime message caught!', payload.new);
+            await appendMessage(payload.new);
+        }
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+        console.log("Realtime subscription status:", status);
+    });
 }
 
 

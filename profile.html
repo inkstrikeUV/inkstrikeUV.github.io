@@ -39,27 +39,30 @@ async function ensureChatroomExists(roomId, myId, targetId) {
         .eq('id', roomId)
         .maybeSingle();
     
-    if (!existingRoom) {
-        const { error: roomError } = await supabaser.from('chatrooms').insert({ 
-            id: roomId, 
-            privacy_type: 'private', 
-            creator_id: myId 
-        });
-        
-        if (roomError) {
-            console.error("Chatroom Insert Error:", roomError);
-            alert("Database blocked room creation: " + roomError.message);
-            return false;
-        }
-        const { error: allowedError } = await supabaser.from('chatroom_allowed_users').insert([
-            { chatroom_id: roomId, user_id: myId },
-            { chatroom_id: roomId, user_id: targetId }
-        ]);
-        if (allowedError) {
-            console.error("Allowed Users Insert Error:", allowedError);
-            alert("Database blocked adding users to room: " + allowedError.message);
-            return false;
-        }
+    if (existingRoom) {
+        return true; 
+    }
+    
+    const { error: roomError } = await supabaser.from('chatrooms').insert({ 
+        id: roomId, 
+        privacy_type: 'private', 
+        creator_id: myId 
+    });
+    
+    if (roomError && roomError.code !== '23505') {
+        console.error("Chatroom Insert Error:", roomError);
+        alert("Database blocked room creation: " + roomError.message);
+        return false;
+    }
+    
+    const { error: allowedError } = await supabaser.from('chatroom_allowed_users').insert([
+        { chatroom_id: roomId, user_id: myId },
+        { chatroom_id: roomId, user_id: targetId }
+    ]);
+    
+    if (allowedError && allowedError.code !== '23505') {
+        console.error("Allowed Users Insert Error:", allowedError);
+        return false;
     }
     return true;
 }
