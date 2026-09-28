@@ -26,7 +26,7 @@
 
     <div class="notification-wrapper">
       <a href="notifications.html">
-        <img src="bell.png" height="50" width="50" alt="Notifications">
+        <img id="notifbell" src="bell.png" height="50" width="50" alt="Notifications">
       </a>
     </div>
   </div>
@@ -59,30 +59,47 @@ async function initPage() {
         } else if (error) {
             console.error("Database error:", error.message);
             document.getElementById("money-display").innerText = "Error";
-        } // 2. Fetch notifications count and alternate image asset logic
-            const { count, error: notiError } = await supabaser
-                .from('notifications')
-                .select('*', { count: 'exact', head: true })
-                .eq('user_id', session.user.id)
-                .eq('is_read', false); // Assumes you tracking unread notifications
-
-            if (!notiError && count > 0) {
-                const badge = document.getElementById("notiBadge");
-                const bellImg = document.getElementById("bellImg");
-                
-                badge.innerText = count;
-                badge.style.display = "flex";
-                
-                bellImg.src = "notif.png"; 
-            }
+          };
             
         } else {
             window.location.href = "loginpage.html";
         }
     }
+async function loadNotifications() {
+    const { data: { session } } = await supabaser.auth.getSession();
+    const myId = session.user.id;
 
+    const { data: requests, error: err1 } = await supabaser
+        .from('relationships')
+        .select('id, id_1, profiles!relationships_id_1_fkey(username)')
+        .eq('id_2', myId)
+        .eq('status', 'requested');
+
+    const { data: renames, error: err2 } = await supabaser
+        .from('relationships')
+        .select('id, id_1, id_2, proposed_name, namerequesterid, target:profiles!namerequesterid(username)') // <-- Changed constraint name to column name
+        .eq('display_request', true)
+        .or(`id_1.eq.${myId},id_2.eq.${myId}`);
+
+
+    if (err1 || err2) {
+        console.error({ err1, err2 });
+        return;
+    }
+
+    container.innerHTML = "";
+
+    const incomingRenames = renames.filter(r => r.namerequesterid !== myId); 
+
+    if (requests.length === 0 && incomingRenames.length === 0) {
+        getElementById(notifbell).src = "bell.png";
+        return;
+    } else {
+      getElementById(notifbell).src = "notif.png";
+    }};
 document.addEventListener("DOMContentLoaded", function() {
     initPage();
+    loadNotifications();
 });
 let lastScrollY = window.scrollY;
 const customHeader = document.querySelector('header');
