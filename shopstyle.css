@@ -20,6 +20,11 @@ header {
     padding: 10px 20px;
     box-sizing: border-box;
     z-index: 9999;
+    transition: transform 0.3s ease-in-out; 
+}
+
+header.hidden {
+    transform: translateY(-100%);
 }
 
 .header-left, 
