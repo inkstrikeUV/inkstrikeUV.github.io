@@ -46,15 +46,126 @@ async function loadNotifications() {
         console.error({ err1, err2 });
         return;
     }
+    
+    const { data: memberships, error: membershipError } =
+        await supabaser
+            .from('allowed_chatroom_users')
+            .select(`
+                chatroom_id,
+                last_read_sequence,
+                chatrooms!inner (
+                    id,
+                    privacy_type
+                )
+            `)
+            .eq('user_id', myId)
+            .eq('chatrooms.privacy_type', 'private');
 
+
+    if (membershipError) {
+        console.error("Could not load DM memberships:", membershipError);
+    }
+
+
+    const unreadDMs = [];
+
+
+    if (memberships) {
+
+        for (const membership of memberships) {
+
+            const lastRead = membership.last_read_sequence || 0;
+
+            const { data: unreadMessages, error: messageError } =
+                await supabaser
+                    .from('messages')
+                    .select('id, sequence_number, sender_id, content')
+                    .eq('chatroom_id', membership.chatroom_id)
+                    .gt('sequence_number', lastRead)
+                    .neq('sender_id', myId)
+                    .order('sequence_number', { ascending: true });
+
+
+            if (messageError) {
+                console.error(
+                    "Could not load unread messages:",
+                    messageError
+                );
+                continue;
+            }
+
+
+            if (unreadMessages && unreadMessages.length > 0) {
+
+                const newestMessage =
+                    unreadMessages[unreadMessages.length - 1];
+
+                const { data: senderProfile } =
+                    await supabaser
+                        .from('profiles')
+                        .select('username')
+                        .eq('id', newestMessage.sender_id)
+                        .single();
+
+
+                unreadDMs.push({
+                    chatroom_id: membership.chatroom_id,
+                    count: unreadMessages.length,
+                    sender: senderProfile?.username || "Someone"
+                });
+            }
+        }
+    }
     container.innerHTML = "";
 
     const incomingRenames = renames.filter(r => r.namerequesterid !== myId); 
 
-    if (requests.length === 0 && incomingRenames.length === 0) {
+    if (requests.length === 0 && incomingRenames.length === 0 && unreadDMs.length === 0) {
         container.innerHTML = "<p>No new notifications right now!</p>";
         return;
     }
+
+        unreadDMs.forEach(dm => {
+
+        const div = document.createElement('div');
+
+        div.className = 'notification-item';
+
+        div.style =
+            "background: rgba(143,84,255,0.2); " +
+            "padding: 15px; " +
+            "margin: 10px 0; " +
+            "border-radius: 8px;";
+
+
+        const messageText =
+            dm.count === 1
+                ? "sent you a new message!"
+                : `sent you ${dm.count} new messages!`;
+
+
+        div.innerHTML = `
+            <p>
+                <strong>${dm.sender}</strong> ${messageText}
+            </p>
+
+            <button
+                onclick="openDM('${dm.chatroom_id}')"
+                style="
+                    background:#300385;
+                    color:white;
+                    padding:8px 14px;
+                    border:none;
+                    border-radius:4px;
+                    cursor:pointer;
+                "
+            >
+                Open message
+            </button>
+        `;
+
+        container.appendChild(div);
+    });
 
     requests.forEach(req => {
         const sender = req.profiles?.username || "Someone";
@@ -81,6 +192,10 @@ async function loadNotifications() {
         `;
         container.appendChild(div);
     });
+}
+function openDM(roomId) {
+    window.location.href =
+        `chatroom.html?room=${encodeURIComponent(roomId)}`;
 }
 
 async function acceptFriend(id) {

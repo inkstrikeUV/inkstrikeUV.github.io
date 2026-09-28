@@ -115,6 +115,7 @@ async function initializeChatroom() {
 }
 
 async function loadMessages() {
+  const { data: { user } } = await db.auth.getUser();
   const { data: fetchedMessages } = await db
     .from('messages')
     .select('*')
@@ -124,6 +125,29 @@ async function loadMessages() {
   if (fetchedMessages) {
     for (const msg of fetchedMessages) {
       await appendMessage(msg);
+    }
+    if (
+      roomId &&
+      roomId.startsWith('dm_') &&
+      fetchedMessages.length > 0
+    ) {
+
+      const newestSequence =
+        fetchedMessages[fetchedMessages.length - 1]
+          .sequence_number;
+      const { error } = await db
+        .from('allowed_chatroom_users')
+        .update({
+          last_read_sequence: newestSequence
+        })
+        .eq('chatroom_id', roomId)
+        .eq('user_id', user.id);
+      if (error) {
+        console.error(
+          "Could not mark messages as read:",
+          error
+        );
+      }
     }
   }
 }
