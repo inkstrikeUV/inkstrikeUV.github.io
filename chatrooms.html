@@ -418,7 +418,7 @@ async function loadDMs() {
 
     for (const dmmembership of dmmemberships) {
         const room = dmmembership.chatrooms;
-        console.log("DM ROOM:", room);
+        console.log("OTHER MEMBERS:", otherMembers);
         if (!room) return;
         const { data: otherMembers } =
         await supabaser
