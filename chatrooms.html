@@ -416,7 +416,7 @@ async function loadDMs() {
 
     roomList.innerHTML = "";
 
-    dmmemberships.forEach(async dmmembership => {
+    for (const dmmembership of dmmemberships) {
         const room = dmmembership.chatrooms;
         if (!room) return;
         const { data: otherMembers } =
@@ -446,8 +446,7 @@ roomDiv.innerHTML = `
         Enter Chatroom
     </button>`;
         roomList.appendChild(roomDiv);
-    });
-}
+}};
 
 
 function openChatroom(roomId) {
