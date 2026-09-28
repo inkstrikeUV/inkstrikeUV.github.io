@@ -1,0 +1,266 @@
+<html>
+<head>
+  <title>Chatrooms</title>
+  <link rel="stylesheet" href="chatroomstyle.css">
+  <link rel="icon" type="image/x-icon" href="icon.ico">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+<div class="chat-layout">
+
+    <aside class="chat-sidebar">
+        <h2>Chatrooms</h2>
+
+        <button onclick="showTab('public')">
+            Public
+        </button>
+
+        <button onclick="showTab('private')">
+            Private
+        </button>
+
+        <button onclick="showTab('dms')">
+            DMs
+        </button>
+
+        <hr>
+
+        <button onclick="showTab('create')">
+            Make Chatroom
+        </button>
+    </aside>
+
+
+    <main id="chat-content">
+    </main>
+
+</div>
+
+<script>
+const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
+const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
+const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function showTab(tab) {
+
+    const content = document.getElementById("chat-content");
+
+    if (tab === "public") {
+
+        content.innerHTML = `
+            <h1>Public Chatrooms</h1>
+
+            <div id="public-rooms">
+                Loading...
+            </div>
+        `;
+
+        loadPublicRooms();
+
+    }
+
+
+    else if (tab === "private") {
+
+        content.innerHTML = `
+            <h1>Private Chatrooms</h1>
+
+            <div id="private-rooms">
+                Loading...
+            </div>
+        `;
+
+        loadPrivateRooms();
+
+    }
+
+
+    else if (tab === "dms") {
+
+        content.innerHTML = `
+            <h1>Direct Messages</h1>
+
+            <div id="dm-rooms">
+                Loading...
+            </div>
+        `;
+
+        loadDMs();
+
+    }
+
+
+    else if (tab === "create") {
+
+        content.innerHTML = `
+            <h1>Make a Chatroom</h1>
+
+            <label>
+                Chatroom name:
+                <input
+                    id="room-name"
+                    type="text"
+                    maxlength="50"
+                    placeholder="My cool chatroom"
+                >
+            </label>
+
+            <br><br>
+
+            <label>
+                <input
+                    type="radio"
+                    name="privacy"
+                    value="public"
+                    checked
+                    onchange="updatePrivacyOptions()"
+                >
+                Public
+            </label>
+
+            <br>
+
+            <label>
+                <input
+                    type="radio"
+                    name="privacy"
+                    value="private"
+                    onchange="updatePrivacyOptions()"
+                >
+                Private
+            </label>
+
+            <div id="private-options"></div>
+
+            <br>
+
+            <button onclick="createChatroom()">
+                Create Chatroom
+            </button>
+        `;
+
+    }
+
+}
+
+function updatePrivacyOptions() {
+
+    const privacy = document.querySelector(
+        'input[name="privacy"]:checked'
+    ).value;
+
+    const options = document.getElementById("private-options");
+
+    if (!options) return;
+
+
+    if (privacy === "public") {
+
+        options.innerHTML = `
+            <p>
+                Anyone can access this chatroom.
+            </p>
+        `;
+
+    }
+
+
+    else {
+
+        options.innerHTML = `
+            <p>
+                Choose which friends can access this chatroom:
+            </p>
+
+            <div id="friend-list">
+                Loading friends...
+            </div>
+        `;
+
+        loadFriendsForChatroom();
+
+    }
+
+}
+
+async function loadFriendsForChatroom() {
+
+    const friendList = document.getElementById("friend-list");
+
+    if (!friendList) return;
+
+    const { data: { session } } = await supabaser.auth.getSession();
+
+    if (!session) {
+        friendList.innerHTML = "<p>Please log in first.</p>";
+        return;
+    }
+
+    const myId = session.user.id;
+
+    const { data: relationships, error } = await supabaser
+        .from("relationships")
+        .select(`
+            id,
+            id_1,
+            id_2,
+            status,
+            profile1:profiles!relationships_id_1_fkey(username),
+            profile2:profiles!relationships_id_2_fkey(username)
+        `)
+        .eq("status", "friends")
+        .or(`id_1.eq.${myId},id_2.eq.${myId}`);
+
+    if (error) {
+        console.error("Could not load friends:", error);
+        friendList.innerHTML = "<p>Could not load your friends.</p>";
+        return;
+    }
+
+    if (!relationships || relationships.length === 0) {
+        friendList.innerHTML = "<p>You don't have any friends yet!</p>";
+        return;
+    }
+
+    friendList.innerHTML = "";
+
+    relationships.forEach(friendship => {
+
+        let friendId;
+        let friendName;
+
+        if (friendship.id_1 === myId) {
+            friendId = friendship.id_2;
+            friendName = friendship.profile2?.username;
+        } else {
+            friendId = friendship.id_1;
+            friendName = friendship.profile1?.username;
+        }
+
+        if (!friendName) {
+            friendName = "Unknown User";
+        }
+
+        const label = document.createElement("label");
+
+        label.style.display = "block";
+        label.style.margin = "8px 0";
+
+        label.innerHTML = `
+            <input
+                type="checkbox"
+                class="chatroom-friend"
+                value="${friendId}"
+            >
+            ${friendName}
+        `;
+
+        friendList.appendChild(label);
+    });
+}
+
+</script>
+</body>
+</html>
