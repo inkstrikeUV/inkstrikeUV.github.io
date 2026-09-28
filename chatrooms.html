@@ -417,6 +417,8 @@ async function loadDMs() {
     roomList.innerHTML = "";
 
     dmmemberships.forEach(async dmmembership => {
+        const room = dmmembership.chatrooms;
+        if (!room) return;
         const { data: otherMembers } =
         await supabaser
             .from("chatroom_allowed_users")
