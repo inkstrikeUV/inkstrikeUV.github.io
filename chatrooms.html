@@ -424,7 +424,6 @@ async function loadDMs() {
             .from("chatroom_allowed_users")
             .select("user_id")
             .eq("chatroom_id", room.id)
-            .neq("user_id", myId);
         console.log("OTHER MEMBERS:", otherMembers);
     let friendname = "Unknown User";
 
