@@ -63,12 +63,3 @@ a, button, .clickable {
 textarea, input[type="text"] {
   cursor: url('pixil-frame-2.png'), text;
 }
-
-.zoom {
-  transition: transform .2s;
-}
-.zoom:hover{
-  -ms-transform: scale(1.1);
-  -webkit-transform: scale(1.1); 
-  transform: scale(1.1); 
-}

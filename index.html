@@ -6,6 +6,17 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
+<style>
+.zoom {
+  transition: transform .2s;
+}
+.zoom:hover{
+  -ms-transform: scale(1.1);
+  -webkit-transform: scale(1.1); 
+  transform: scale(1.1); 
+}
+</style>
+
 <header>
   <div id="loginlink"><a href="loginpage.html" style="color:#300385">sign in</a></div>
   <div id="accountlink" style="display: none;"><a href="profile.html" style="color:#300385"><span id="username-display">Loading...</span></a></div>
