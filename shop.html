@@ -35,6 +35,7 @@
 <body>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 </body>
+
 <script>
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
@@ -87,15 +88,13 @@ async function loadNotifications() {
         return;
     }
 
-    container.innerHTML = "";
-
     const incomingRenames = renames.filter(r => r.namerequesterid !== myId); 
 
     if (requests.length === 0 && incomingRenames.length === 0) {
-        getElementById(notifbell).src = "bell.png";
+        document.getElementById("notifbell").src = "bell.png";
         return;
     } else {
-      getElementById(notifbell).src = "notif.png";
+      document.getElementById("notifbell").src = "notif.png";
     }};
 document.addEventListener("DOMContentLoaded", function() {
     initPage();
@@ -113,5 +112,4 @@ window.addEventListener('scroll', () => {
     lastScrollY = window.scrollY;
 });
 </script>
-</body>
 </html>
