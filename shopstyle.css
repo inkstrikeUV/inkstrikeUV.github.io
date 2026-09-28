@@ -81,25 +81,6 @@ header a:hover {
     transform: scale(0.92);
 }
 
-.badge {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    background-color: #ef4444;
-    color: #ffffff;
-    font-size: 0.7rem;
-    font-weight: bold;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    border: 2px solid #8f54ff;
-    height: 80px;
-}
-
 
 body { 
 background: linear-gradient(0deg, rgba(53, 0, 117, 1) 0%, rgba(131, 70, 212, 1) 60%, rgba(237, 222, 255, 1) 100%); 

@@ -47,9 +47,8 @@ async function loadNotifications() {
         return;
     }
 
-    container.innerHTML = ""; // Clear loader
+    container.innerHTML = "";
 
-    // Filter out renames that YOU proposed so you aren't approving your own choice
     const incomingRenames = renames.filter(r => r.namerequesterid !== myId); 
 
     if (requests.length === 0 && incomingRenames.length === 0) {
@@ -57,7 +56,6 @@ async function loadNotifications() {
         return;
     }
 
-    // Render Friend Requests
     requests.forEach(req => {
         const sender = req.profiles?.username || "Someone";
         const div = document.createElement('div');
@@ -71,7 +69,6 @@ async function loadNotifications() {
         container.appendChild(div);
     });
 
-    // Render Title Rename Requests
     incomingRenames.forEach(ren => {
         const sender = ren.target?.username || "Your friend";
         const div = document.createElement('div');
@@ -116,7 +113,6 @@ async function rejectRename(id) {
     else location.reload();
 }
 
-// Kick off the load sequence on page load
 loadNotifications();
 </script>
 

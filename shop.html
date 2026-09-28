@@ -28,16 +28,12 @@
       <a href="notifications.html">
         <img src="bell.png" height="50" width="50" alt="Notifications">
       </a>
-      <span class="badge" id="notiBadge" style="display: none;">0</span>
     </div>
   </div>
 </header>
 
 <body>
-    AAAAAA
-    AAAAAAAA
-    AAAAAAAAAAAAAA
-    AAAAAAAAAAAAAAaa<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 </body>
 <script>
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
@@ -55,7 +51,6 @@ async function initPage() {
             .select('money, username')
             .eq('id', session.user.id)
             .single();
-
         if (data) {
             money = data.money;
             document.getElementById("money-display").innerText = money;
@@ -64,11 +59,27 @@ async function initPage() {
         } else if (error) {
             console.error("Database error:", error.message);
             document.getElementById("money-display").innerText = "Error";
+        } // 2. Fetch notifications count and alternate image asset logic
+            const { count, error: notiError } = await supabaser
+                .from('notifications')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', session.user.id)
+                .eq('is_read', false); // Assumes you tracking unread notifications
+
+            if (!notiError && count > 0) {
+                const badge = document.getElementById("notiBadge");
+                const bellImg = document.getElementById("bellImg");
+                
+                badge.innerText = count;
+                badge.style.display = "flex";
+                
+                bellImg.src = "notif.png"; 
+            }
+            
+        } else {
+            window.location.href = "loginpage.html";
         }
-    } else {
-        window.location.href = "loginpage.html";
     }
-}
 
 document.addEventListener("DOMContentLoaded", function() {
     initPage();
