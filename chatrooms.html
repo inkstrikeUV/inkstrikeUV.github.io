@@ -260,7 +260,228 @@ async function loadFriendsForChatroom() {
         friendList.appendChild(label);
     });
 }
+async function loadPublicRooms() {
 
+    const roomList = document.getElementById("public-rooms");
+
+    if (!roomList) return;
+
+    const { data: rooms, error } = await supabaser
+        .from("chatrooms")
+        .select("id, name, creator_id")
+        .eq("privacy_type", "public")
+        .order("name", { ascending: true });
+
+    if (error) {
+        console.error("Could not load public chatrooms:", error);
+        roomList.innerHTML = "<p>Could not load public chatrooms.</p>";
+        return;
+    }
+
+    if (!rooms || rooms.length === 0) {
+        roomList.innerHTML = "<p>There aren't any public chatrooms yet!</p>";
+        return;
+    }
+
+    roomList.innerHTML = "";
+
+    rooms.forEach(room => {
+
+        const roomDiv = document.createElement("div");
+
+        roomDiv.className = "chatroom-entry";
+
+        roomDiv.innerHTML = `
+            <h3>${room.name}</h3>
+
+            <button onclick="openChatroom('${room.id}')">
+                Enter Chatroom
+            </button>
+        `;
+
+        roomList.appendChild(roomDiv);
+    });
+}
+
+
+async function loadPrivateRooms() {
+
+    const roomList = document.getElementById("private-rooms");
+
+    if (!roomList) return;
+
+    const { data: { session } } =
+        await supabaser.auth.getSession();
+
+    if (!session) {
+        roomList.innerHTML = "<p>Please log in first.</p>";
+        return;
+    }
+
+    const myId = session.user.id;
+
+    const { data: memberships, error } =
+        await supabaser
+            .from("chatroom_allowed_users")
+            .select(`
+                chatroom_id,
+                chatrooms (
+                    id,
+                    name,
+                    creator_id
+                )
+            `)
+            .eq("user_id", myId);
+
+    if (error) {
+        console.error("Could not load private chatrooms:", error);
+        roomList.innerHTML =
+            "<p>Could not load your private chatrooms.</p>";
+        return;
+    }
+
+    if (!memberships || memberships.length === 0) {
+        roomList.innerHTML =
+            "<p>You aren't in any private chatrooms yet!</p>";
+        return;
+    }
+
+    roomList.innerHTML = "";
+
+    memberships.forEach(membership => {
+
+        const room = membership.chatrooms;
+
+        if (!room) return;
+
+        const roomDiv = document.createElement("div");
+
+        roomDiv.className = "chatroom-entry";
+
+        roomDiv.innerHTML = `
+            <h3>${room.name}</h3>
+
+            <button onclick="openChatroom('${room.id}')">
+                Enter Chatroom
+            </button>
+        `;
+
+        roomList.appendChild(roomDiv);
+    });
+}
+
+
+function openChatroom(roomId) {
+
+    window.location.href =
+        `messages.html?room=${encodeURIComponent(roomId)}`;
+
+}
+async function createChatroom() {
+
+    const { data: { session } } =
+        await supabaser.auth.getSession();
+
+    if (!session) {
+        alert("Please log in first!");
+        return;
+    }
+
+    const myId = session.user.id;
+
+    const nameInput =
+        document.getElementById("room-name");
+
+    const roomName =
+        nameInput.value.trim();
+
+    if (!roomName) {
+        alert("Please give your chatroom a name!");
+        return;
+    }
+
+    const privacy =
+        document.querySelector(
+            'input[name="privacy"]:checked'
+        ).value;
+
+    const roomId =
+        "chat_" + crypto.randomUUID();
+
+    const { error: roomError } =
+        await supabaser
+            .from("chatrooms")
+            .insert({
+                id: roomId,
+                name: roomName,
+                privacy_type: privacy,
+                creator_id: myId
+            });
+
+    if (roomError) {
+        console.error("Chatroom creation error:", roomError);
+        alert(
+            "Could not create chatroom: " +
+            roomError.message
+        );
+        return;
+    }
+
+    if (privacy === "private") {
+
+        const selectedFriends =
+            Array.from(
+                document.querySelectorAll(
+                    ".chatroom-friend:checked"
+                )
+            ).map(
+                checkbox => checkbox.value
+            );
+
+        const members = [
+            myId,
+            ...selectedFriends
+        ];
+
+        const uniqueMembers =
+            [...new Set(members)];
+
+        const membershipRows =
+            uniqueMembers.map(userId => ({
+                chatroom_id: roomId,
+                user_id: userId,
+                last_read_sequence: 0
+            }));
+
+        const { error: membershipError } =
+            await supabaser
+                .from("chatroom_allowed_users")
+                .insert(membershipRows);
+
+        if (membershipError) {
+
+            console.error(
+                "Membership creation error:",
+                membershipError
+            );
+
+            await supabaser
+                .from("chatrooms")
+                .delete()
+                .eq("id", roomId);
+
+            alert(
+                "Could not add the chatroom members: " +
+                membershipError.message
+            );
+
+            return;
+        }
+    }
+
+    window.location.href =
+        `messages.html?room=${encodeURIComponent(roomId)}`;
+}
 </script>
 </body>
 </html>
