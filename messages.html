@@ -115,44 +115,54 @@ async function initializeChatroom() {
 }
 
 async function loadMessages() {
-  const { data: { user } } = await db.auth.getUser();
-  if (!user) return;
-  const { data: fetchedMessages, error } = await db
-    .from('messages')
-    .select('*')
-    .eq('chatroom_id', roomId)
-    .order('sequence_number', { ascending: true });
-  if (error) {
-    console.error("Could not load messages:", error);
-    return;
-  }
-  chatBox.innerHTML = '';
-  if (fetchedMessages) {
-    for (const msg of fetchedMessages) {
-      await appendMessage(msg);
+
+    const { data: { user } } = await db.auth.getUser();
+
+    if (!user) return;
+
+    const { data: fetchedMessages, error } = await db
+        .from('messages')
+        .select('*')
+        .eq('chatroom_id', roomId)
+        .order('sequence_number', { ascending: true });
+
+    if (error) {
+        console.error("Could not load messages:", error);
+        return;
     }
-    if (
-      roomId &&
-      roomId.startsWith('dm_') &&
-      fetchedMessages.length > 0
-    ) {
-      const newestSequence =
+
+    chatBox.innerHTML = '';
+
+    if (!fetchedMessages || fetchedMessages.length === 0) {
+        return;
+    }
+
+    for (const msg of fetchedMessages) {
+        await appendMessage(msg);
+    }
+
+    const newestSequence =
         fetchedMessages[fetchedMessages.length - 1].sequence_number;
-      const { error: readError } = await db
+
+    console.log("Room:", roomId);
+    console.log("My user ID:", user.id);
+    console.log("Newest sequence:", newestSequence);
+
+    const { data: updatedRows, error: readError } = await db
         .from('chatroom_allowed_users')
         .update({
-          last_read_sequence: newestSequence
+            last_read_sequence: newestSequence
         })
         .eq('chatroom_id', roomId)
-        .eq('user_id', user.id);
-      if (readError) {
-        console.error(
-          "Could not mark messages as read:",
-          readError
-        );
-      }
+        .eq('user_id', user.id)
+        .select();
+
+    console.log("Updated membership:", updatedRows);
+    console.log("Update error:", readError);
+
+    if (readError) {
+        console.error("Could not mark messages as read:", readError);
     }
-  }
 }
 
 async function sendMessage(text) {
