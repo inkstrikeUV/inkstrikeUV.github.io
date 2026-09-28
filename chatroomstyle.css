@@ -1,0 +1,65 @@
+@font-face {
+    font-family: font; 
+    src: url('Vifont!!!.ttf'); 
+}
+html {
+    font-family: font; font-size: xx-large; color:#ffffff;
+}
+footer {
+    background-color:#8f54ff; color:#300385; font-family: font; position:fixed; bottom: 0; left: 0; right: 0; text-align: center;
+}
+header {
+    background-color:#8f54ff; 
+    color:#300385; 
+    font-family: font; 
+    position:fixed; top: 0; left: 0; right: 0; 
+    display: flex; 
+    justify-content: space-between;
+    align-items: center; 
+    padding: 10px 20px;
+    box-sizing: border-box;
+    z-index: 9999;
+}
+
+body { 
+background: linear-gradient(0deg, rgba(53, 0, 117, 1) 0%, rgba(131, 70, 212, 1) 60%, rgba(237, 222, 255, 1) 100%); 
+padding: 80px 0;
+margin: 0;
+color:#ffffff";
+}
+.main-content {
+    width: 100%;
+    text-align: center;
+}
+body2 {
+    display: block;
+    text-align: center;
+    width: 100%;
+}
+body2 img {
+    border-radius: 25px;
+    background-color: #474747;
+    padding: 20px;
+    width: 260px;
+    height: 200px;
+    display: inline-block; 
+}
+button {
+  background: transparent;
+  border: none; 
+  padding: 0;
+  margin: 0;
+  font-family: font;
+}
+
+body {
+  cursor: url('pixil-frame-0\ \(2\).png'), auto;
+}
+
+a, button, .clickable {
+  cursor: url('pixil-frame-1.png'), pointer;
+}
+
+textarea, input[type="text"] {
+  cursor: url('pixil-frame-2.png'), text;
+}
