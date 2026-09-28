@@ -419,15 +419,16 @@ async function loadDMs() {
     for (const dmmembership of dmmemberships) {
         const room = dmmembership.chatrooms;
         if (!room) return;
-        const { data: otherMembers } =
-        await supabaser
-            .from("chatroom_allowed_users")
-            .select("user_id")
-            .eq("chatroom_id", room.id)
-            .neq("user_id", myId);
-        console.log("OTHER MEMBERS:", otherMembers);
+        const { data: otherMembers, error: memberError } =
+    await supabaser
+        .from("chatroom_allowed_users")
+        .select("user_id")
+        .eq("chatroom_id", room.id);
 
-const otherUser = otherMembers.find(
+console.log("ALL MEMBERS:", otherMembers);
+console.log("MEMBER ERROR:", memberError);
+
+const otherUser = otherMembers?.find(
     member => member.user_id !== myId
 );
 
