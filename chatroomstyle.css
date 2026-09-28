@@ -45,11 +45,11 @@ body2 img {
     display: inline-block; 
 }
 button {
-  background: transparent;
   border: none; 
   padding: 0;
   margin: 0;
   font-family: font;
+  font-size: xx-large;
 }
 
 body {
