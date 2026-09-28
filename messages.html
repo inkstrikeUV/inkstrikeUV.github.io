@@ -136,7 +136,7 @@ async function loadMessages() {
         fetchedMessages[fetchedMessages.length - 1]
           .sequence_number;
       const { error } = await db
-        .from('allowed_chatroom_users')
+        .from('chatroom_allowed_users')
         .update({
           last_read_sequence: newestSequence
         })
