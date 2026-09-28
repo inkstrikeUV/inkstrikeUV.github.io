@@ -418,7 +418,6 @@ async function loadDMs() {
 
     for (const dmmembership of dmmemberships) {
         const room = dmmembership.chatrooms;
-        console.log("OTHER MEMBERS:", otherMembers);
         if (!room) return;
         const { data: otherMembers } =
         await supabaser
@@ -426,6 +425,7 @@ async function loadDMs() {
             .select("user_id")
             .eq("chatroom_id", room.id)
             .neq("user_id", myId);
+        console.log("OTHER MEMBERS:", otherMembers);
     let friendname = "Unknown User";
 
 if (otherMembers && otherMembers.length > 0) {
