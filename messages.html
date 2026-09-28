@@ -116,12 +116,17 @@ async function initializeChatroom() {
 
 async function loadMessages() {
   const { data: { user } } = await db.auth.getUser();
-  const { data: fetchedMessages } = await db
+  if (!user) return;
+  const { data: fetchedMessages, error } = await db
     .from('messages')
     .select('*')
     .eq('chatroom_id', roomId)
     .order('sequence_number', { ascending: true });
-
+  if (error) {
+    console.error("Could not load messages:", error);
+    return;
+  }
+  chatBox.innerHTML = '';
   if (fetchedMessages) {
     for (const msg of fetchedMessages) {
       await appendMessage(msg);
@@ -131,21 +136,19 @@ async function loadMessages() {
       roomId.startsWith('dm_') &&
       fetchedMessages.length > 0
     ) {
-
       const newestSequence =
-        fetchedMessages[fetchedMessages.length - 1]
-          .sequence_number;
-      const { error } = await db
+        fetchedMessages[fetchedMessages.length - 1].sequence_number;
+      const { error: readError } = await db
         .from('chatroom_allowed_users')
         .update({
           last_read_sequence: newestSequence
         })
         .eq('chatroom_id', roomId)
         .eq('user_id', user.id);
-      if (error) {
+      if (readError) {
         console.error(
           "Could not mark messages as read:",
-          error
+          readError
         );
       }
     }
