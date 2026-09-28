@@ -6,12 +6,37 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <header>
-  <div id="loginlink"><a href="loginpage.html" style="color:#300385">sign in</a></div>
-  <div id="accountlink" style="display: none;"><a href="profile.html" style="color:#300385"><span id="username-display">Loading...</span></a></div>
-  total money:<span id="money-display">Loading...</span>
-  <a href="../index.html" style="color:#300385"><center>hoam :3</center></a>
-  <a href="notifications.html"><img src="bell.png" height="50" width="50"></a>
+  <div class="header-left">
+    <div id="loginlink">
+      <a href="loginpage.html" style="color:#300385">sign in</a>
+    </div>
+    <div id="accountlink" style="display: none;">
+      <a href="profile.html" style="color:#300385"><span id="username-display">Loading...</span></a>
+    </div>
+    
+    <div class="weep-woop-container" id="weepWoopToggle">
+      <span class="weep-woop-indicator">⇅ WEEPWOOP</span>
+    </div>
+  </div>
+
+  <div class="header-center">
+    <a href="../index.html" style="color:#300385">hoam :3</a>
+  </div>
+
+  <div class="header-right">
+    <div class="money-container">
+      total money:<span id="money-display">Loading...</span>
+    </div>
+
+    <div class="notification-wrapper">
+      <a href="notifications.html">
+        <img src="bell.png" height="50" width="50" alt="Notifications">
+      </a>
+      <span class="badge" id="notiBadge" style="display: none;">0</span>
+    </div>
+  </div>
 </header>
+
 <body>
 
 <script>
