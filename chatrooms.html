@@ -426,15 +426,23 @@ async function loadDMs() {
             .eq("chatroom_id", room.id)
             .neq("user_id", myId);
     let friendname = "Unknown User";
-    if (otherMembers && otherMembers.length > 0) {
-        const otherUserId = otherMembers[0].user_id;
-        const { data: profile } =
+
+if (otherMembers && otherMembers.length > 0) {
+
+    const otherUserId = otherMembers[0].user_id;
+
+    const { data: profile, error: profileError } =
         await supabaser
             .from("profiles")
             .select("username")
             .eq("id", otherUserId)
             .single();
-    if (profile) {
+
+    console.log("Other user ID:", otherUserId);
+    console.log("Profile:", profile);
+    console.log("Profile error:", profileError);
+
+    if (!profileError && profile) {
         friendname = profile.username;
     }
 }
@@ -443,7 +451,7 @@ roomDiv.className = "chatroom-entry";
 roomDiv.innerHTML = `
     <h3>${friendname}</h3>
     <button onclick="openChatroom('${room.id}')">
-        Enter Chatroom
+        Enter DM
     </button>`;
         roomList.appendChild(roomDiv);
 }};
