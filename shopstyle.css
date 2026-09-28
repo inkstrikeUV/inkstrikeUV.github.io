@@ -32,15 +32,18 @@ header.hidden {
     display: flex;
     align-items: center;
     gap: 20px;
+    flex: 1;
+}
+
+.header-right {
+    justify-content: flex-end; 
 }
 
 .header-center {
     display: flex;
     align-items: center;
     justify-content: center;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    flex-shrink: 0; 
 }
 
 header a {
@@ -94,6 +97,7 @@ header a:hover {
     justify-content: center;
     pointer-events: none;
     border: 2px solid #8f54ff;
+    height: 80px;
 }
 
 
