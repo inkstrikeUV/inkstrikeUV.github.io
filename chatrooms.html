@@ -424,25 +424,24 @@ async function loadDMs() {
             .from("chatroom_allowed_users")
             .select("user_id")
             .eq("chatroom_id", room.id)
+            .neq("user_id", myId);
         console.log("OTHER MEMBERS:", otherMembers);
-    let friendname = "Unknown User";
 
-if (otherMembers && otherMembers.length > 0) {
+const otherUser = otherMembers.find(
+    member => member.user_id !== myId
+);
 
-    const otherUserId = otherMembers[0].user_id;
+let friendname = "Unknown User";
 
-    const { data: profile, error: profileError } =
+if (otherUser) {
+    const { data: profile } =
         await supabaser
             .from("profiles")
             .select("username")
-            .eq("id", otherUserId)
+            .eq("id", otherUser.user_id)
             .single();
 
-    console.log("Other user ID:", otherUserId);
-    console.log("Profile:", profile);
-    console.log("Profile error:", profileError);
-
-    if (!profileError && profile) {
+    if (profile) {
         friendname = profile.username;
     }
 }
