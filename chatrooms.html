@@ -339,8 +339,9 @@ async function loadPrivateRooms() {
             "<p>Could not load your private chatrooms.</p>";
         return;
     }
-
-    if (!memberships || memberships.length === 0) {
+    const privmemberships = (memberships || []).filter(
+    membership => membership.chatroom_id.startsWith("chat_"));
+    if (!privmemberships || privmemberships.length === 0) {
         roomList.innerHTML =
             "<p>You aren't in any private chatrooms yet!</p>";
         return;
@@ -348,9 +349,9 @@ async function loadPrivateRooms() {
 
     roomList.innerHTML = "";
 
-    memberships.forEach(membership => {
+    privmemberships.forEach(privmembership => {
 
-        const room = membership.chatrooms;
+        const room = privmembership.chatrooms;
 
         if (!room) return;
 
@@ -366,6 +367,82 @@ async function loadPrivateRooms() {
             </button>
         `;
 
+        roomList.appendChild(roomDiv);
+    });
+}
+
+async function loadDMs() {
+
+    const roomList = document.getElementById("dm-rooms");
+
+    if (!roomList) return;
+
+    const { data: { session } } =
+        await supabaser.auth.getSession();
+
+    if (!session) {
+        roomList.innerHTML = "<p>Please log in first.</p>";
+        return;
+    }
+
+    const myId = session.user.id;
+
+    const { data: memberships, error } =
+        await supabaser
+            .from("chatroom_allowed_users")
+            .select(`
+                chatroom_id,
+                chatrooms (
+                    id,
+                    name,
+                    creator_id
+                )
+            `)
+            .eq("user_id", myId);
+
+    if (error) {
+        console.error("Could not load Direct Messages:", error);
+        roomList.innerHTML =
+            "<p>Could not load your Direct Messages.</p>";
+        return;
+    }
+    const dmmemberships = (memberships || []).filter(
+    membership => membership.chatroom_id.startsWith("dm_"));
+    if (!dmmemberships || dmmemberships.length === 0) {
+        roomList.innerHTML =
+            "<p>You Havent started any direct messages yet! Go to a friends profile to start one!</p>";
+        return;
+    }
+
+    roomList.innerHTML = "";
+
+    dmmemberships.forEach(async dmmembership => {
+        const { data: otherMembers } =
+        await supabaser
+            .from("chatroom_allowed_users")
+            .select("user_id")
+            .eq("chatroom_id", room.id)
+            .neq("user_id", myId);
+    let friendname = "Unknown User";
+    if (otherMembers && otherMembers.length > 0) {
+        const otherUserId = otherMembers[0].user_id;
+        const { data: profile } =
+        await supabaser
+            .from("profiles")
+            .select("username")
+            .eq("id", otherUserId)
+            .single();
+    if (profile) {
+        friendname = profile.username;
+    }
+}
+const roomDiv = document.createElement("div");
+roomDiv.className = "chatroom-entry";
+roomDiv.innerHTML = `
+    <h3>${friendname}</h3>
+    <button onclick="openChatroom('${room.id}')">
+        Enter Chatroom
+    </button>`;
         roomList.appendChild(roomDiv);
     });
 }
