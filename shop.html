@@ -73,6 +73,17 @@ async function initPage() {
 document.addEventListener("DOMContentLoaded", function() {
     initPage();
 });
+let lastScrollY = window.scrollY;
+const customHeader = document.querySelector('header');
+
+window.addEventListener('scroll', () => {
+    if (window.scrollY > lastScrollY && window.scrollY > 50) {
+        customHeader.classList.add('hidden');
+    } else {
+        customHeader.classList.remove('hidden');
+    }
+    lastScrollY = window.scrollY;
+});
 </script>
 </body>
 </html>
