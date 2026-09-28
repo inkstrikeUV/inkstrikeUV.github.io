@@ -49,30 +49,6 @@ header a:hover {
     opacity: 0.8;
 }
 
-.weep-woop-container {
-    display: flex;
-    align-items: center;
-    background: rgba(48, 3, 133, 0.15);
-    padding: 6px 12px;
-    border-radius: 20px;
-    cursor: pointer;
-    user-select: none;
-    border: 1px solid rgba(48, 3, 133, 0.3);
-}
-
-.weep-woop-indicator {
-    display: inline-block;
-    font-weight: bold;
-    font-size: 0.85rem;
-    color: #300385;
-    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.weep-woop-container.active .weep-woop-indicator {
-    transform: translateY(-4px);
-    color: #ffffff;
-}
-
 .money-container {
     font-size: 0.95rem;
     font-weight: 500;
