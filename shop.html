@@ -8,39 +8,46 @@
 <header>
   <div id="loginlink"><a href="loginpage.html" style="color:#300385">sign in</a></div>
   <div id="accountlink" style="display: none;"><a href="profile.html" style="color:#300385"><span id="username-display">Loading...</span></a></div>
+  total money:<span id="money-display">Loading...</span>
+  <a href="../index.html" style="color:#300385"><center>hoam :3</center></a>
   <a href="notifications.html"><img src="bell.png" height="50" width="50"></a>
 </header>
 <body>
-    <p>total money:<span id="money-display">Loading...</span></p>
 
 <script>
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let money = 0;
-async function loadSavedBalance() {
+async function initPage() {
     const { data: { session } } = await supabaser.auth.getSession();
+    
     if (session) {
+        document.getElementById('loginlink').style.display = 'none';
+        document.getElementById('accountlink').style.display = 'block';
         const { data, error } = await supabaser
             .from('profiles')
-            .select('money')
+            .select('money, username')
             .eq('id', session.user.id)
             .single();
+
         if (data) {
             money = data.money;
             document.getElementById("money-display").innerText = money;
+            
+            document.getElementById("username-display").innerText = data.username || "User";
+        } else if (error) {
+            console.error("Database error:", error.message);
+            document.getElementById("money-display").innerText = "Error";
         }
     } else {
-        window.location.href = "../loginpage.html";
+        window.location.href = "loginpage.html";
     }
 }
-  document.addEventListener("DOMContentLoaded", function() {
-    checkExistingSession();
-    loadSavedBalance();
-    document.getElementById("money-display").innerText = money;
 
-  });
+document.addEventListener("DOMContentLoaded", function() {
+    initPage();
+});
 </script>
 </body>
-<footer><a href="../index.html" style="color:#300385"><center>hoam :3</center></a></footer>
 </html>
