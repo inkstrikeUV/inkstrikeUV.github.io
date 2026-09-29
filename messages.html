@@ -211,17 +211,18 @@ async function sendMessage(text) {
   }
 }
 async function deleteMessage(messageId) {
-  if (currentUserId !== MOD_UID) return;
+    console.log("Trying to delete:", messageId);
+    console.log("Current UID:", currentUserId);
+    console.log("Moderator UID:", MOD_UID);
 
-  const { error } = await db
-    .from('messages')
-    .delete()
-    .eq('id', messageId);
+    const { data, error } = await db
+        .from('messages')
+        .delete()
+        .eq('id', messageId)
+        .select();
 
-  if (error) {
-    console.error("Could not delete message:", error);
-    alert("Could not delete message.");
-  }
+    console.log("DELETE DATA:", data);
+    console.log("DELETE ERROR:", error);
 }
 
 function listenForNewMessages() {
