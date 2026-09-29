@@ -34,12 +34,14 @@ async function loadSavedBalance() {
         window.location.href = "../loginpage.html";
     }
 }
-
+let clickcount = 0
   document.addEventListener("DOMContentLoaded", function() {
     loadSavedBalance();
     const rock = document.getElementById("rock");
   rock.addEventListener("click", function() {
-    // play sounds
+    if (clickcount > 50) 
+    {return}
+    clickcount += 1;
     const sounds = ["snd1.mp3","snd2.mp3","snd3.mp3","snd4.mp3","snd5.mp3","snd6.mp3","snd7.mp3","snd8.mp3","snd9.mp3"];
     const audio = new Audio();
     const randomIndex = Math.floor(Math.random() * sounds.length);
@@ -48,7 +50,6 @@ async function loadSavedBalance() {
     console.error("Playback failed:", error);
     });
 
-    // check if youre signed in
     async function checkExistingSession() {
         const { data: { session } } = await supabaser.auth.getSession();
         if (session) {
