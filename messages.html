@@ -71,7 +71,7 @@ async function appendMessage(msg) {
 
   if (currentUserId === MOD_UID) {
     deleteButton = `
-      <button onclick="deleteMessage('${msg.id}')">
+      <button style="background-color: #ff0000;" onclick="deleteMessage('${msg.id}')">
         Delete
       </button>`;
   }
@@ -211,18 +211,17 @@ async function sendMessage(text) {
   }
 }
 async function deleteMessage(messageId) {
-    console.log("Trying to delete:", messageId);
-    console.log("Current UID:", currentUserId);
-    console.log("Moderator UID:", MOD_UID);
+  if (currentUserId !== MOD_UID) return;
 
-    const { data, error } = await db
-        .from('messages')
-        .delete()
-        .eq('id', messageId)
-        .select();
+  const { error } = await db
+    .from('messages')
+    .delete()
+    .eq('id', messageId);
 
-    console.log("DELETE DATA:", data);
-    console.log("DELETE ERROR:", error);
+  if (error) {
+    console.error("Could not delete message:", error);
+    alert("Could not delete message.");
+  }
 }
 
 function listenForNewMessages() {
