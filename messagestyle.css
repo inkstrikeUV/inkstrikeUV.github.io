@@ -81,6 +81,25 @@ header a:hover {
 }
 
 
+.chatroom-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#notification-toggle {
+  padding: 6px 12px;
+  background-color: #300385;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+#notification-toggle:hover {
+  opacity: 0.85;
+}
+
 body { 
 background: linear-gradient(0deg, rgba(53, 0, 117, 1) 0%, rgba(131, 70, 212, 1) 60%, rgba(237, 222, 255, 1) 100%); 
 padding: 80px 0;

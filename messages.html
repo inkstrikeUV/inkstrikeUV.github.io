@@ -36,8 +36,15 @@
 </header>
 
 <main style="padding: 20px;">
+<div class="chatroom-header">
   <h2>Chatroom</h2>
-  <div id="chat-box">Loading conversation...</div>
+
+  <button id="notification-toggle" type="button">
+    Enable notifications
+  </button>
+</div>
+
+<div id="chat-box">Loading conversation...</div>
   
   <form id="message-form">
     <input type="text" id="message-input" placeholder="Type your message here..." required style="width: 75%; padding: 8px;">
@@ -50,6 +57,7 @@ const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let money = 0;
+
 var link = document.querySelector("link[rel~='icon']");
 if (!link) {
     link = document.createElement('link');
@@ -99,7 +107,7 @@ const myId = session.user.id;
 
     const { data: renames, error: err2 } = await db
         .from('relationships')
-        .select('id, id_1, id_2, proposed_name, namerequesterid, target:profiles!namerequesterid(username)') // <-- Changed constraint name to column name
+        .select('id, id_1, id_2, proposed_name, namerequesterid, target:profiles!namerequesterid(username)')
         .eq('display_request', true)
         .or(`id_1.eq.${myId},id_2.eq.${myId}`);
 
@@ -147,7 +155,7 @@ for (const membership of dmMemberships) {
     const { data: unreadMessages, error: messageError } =
         await db
             .from('messages')
-            .select('id, sequence_number, sender_id, content')
+            .select('id')
             .eq('chatroom_id', membership.chatroom_id)
             .gt('sequence_number', lastRead)
             .neq('sender_id', myId)
@@ -241,6 +249,89 @@ if (!roomId) {
 const chatBox = document.getElementById('chat-box');
 const messageForm = document.getElementById('message-form');
 const messageInput = document.getElementById('message-input');
+const notificationToggle = document.getElementById('notification-toggle');
+
+async function loadNotificationStatus() {
+  if (!currentUserId || !roomId) return;
+
+  const { data, error } = await db
+    .from('chatroom_notifications')
+    .select('enabled')
+    .eq('chatroom_id', roomId)
+    .eq('user_id', currentUserId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Could not load notification status:', error);
+    return;
+  }
+
+  if (data?.enabled) {
+    notificationToggle.textContent = 'Disable notifications';
+  } else {
+    notificationToggle.textContent = 'Enable notifications';
+  }
+}
+async function toggleNotifications() {
+  if (!currentUserId || !roomId) return;
+
+  const { data: existing, error: lookupError } = await db
+    .from('chatroom_notifications')
+    .select('enabled')
+    .eq('chatroom_id', roomId)
+    .eq('user_id', currentUserId)
+    .maybeSingle();
+
+  if (lookupError) {
+    console.error('Could not check notification status:', lookupError);
+    return;
+  }
+
+  if (existing) {
+    const newStatus = !existing.enabled;
+
+    const { error } = await db
+      .from('chatroom_notifications')
+      .update({
+        enabled: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('chatroom_id', roomId)
+      .eq('user_id', currentUserId);
+
+    if (error) {
+      console.error('Could not update notifications:', error);
+      alert('Could not update notification settings.');
+      return;
+    }
+
+    notificationToggle.textContent =
+      newStatus
+        ? 'Disable notifications'
+        : 'Enable notifications';
+
+  } else {
+    const { error } = await db
+      .from('chatroom_notifications')
+      .insert({
+        chatroom_id: roomId,
+        user_id: currentUserId,
+        last_read_sequence: 0,
+        up_to_date: true,
+        enabled: true
+      });
+
+    if (error) {
+      console.error('Could not enable notifications:', error);
+      alert('Could not enable notifications.');
+      return;
+    }
+
+    notificationToggle.textContent = 'Disable notifications';
+  }
+}
+
+notificationToggle.addEventListener('click', toggleNotifications);
 
 const profileCache = {};
 
@@ -260,7 +351,6 @@ async function getUserProfile(userId) {
   profileCache[userId] = data;
   return data;
 }
-let currentUserId = null;
 
 async function appendMessage(msg) {
   const senderProfile = await getUserProfile(msg.sender_id);
@@ -321,7 +411,7 @@ async function initializeChatroom() {
     return;
   }
   currentUserId = user.id;
-
+  await loadNotificationStatus();
   const myProfile = await getUserProfile(user.id);
   document.getElementById('loginlink').style.display = 'none';
   document.getElementById('accountlink').style.display = 'block';
@@ -373,39 +463,30 @@ if (heading) {
 }
 
 async function loadMessages() {
-
     const { data: { user } } = await db.auth.getUser();
-
     if (!user) return;
-
     const { data: fetchedMessages, error } = await db
         .from('messages')
         .select('*')
         .eq('chatroom_id', roomId)
         .order('sequence_number', { ascending: true });
-
     if (error) {
         console.error("Could not load messages:", error);
         return;
     }
-
     chatBox.innerHTML = '';
 
     if (!fetchedMessages || fetchedMessages.length === 0) {
         return;
     }
-
     for (const msg of fetchedMessages) {
         await appendMessage(msg);
     }
-
     const newestSequence =
         fetchedMessages[fetchedMessages.length - 1].sequence_number;
-
     console.log("Room:", roomId);
     console.log("My user ID:", user.id);
     console.log("Newest sequence:", newestSequence);
-
     const { data: updatedRows, error: readError } = await db
         .from('chatroom_allowed_users')
         .update({
@@ -414,10 +495,8 @@ async function loadMessages() {
         .eq('chatroom_id', roomId)
         .eq('user_id', user.id)
         .select();
-
     console.log("Updated membership:", updatedRows);
     console.log("Update error:", readError);
-
     if (readError) {
         console.error("Could not mark messages as read:", readError);
     }
