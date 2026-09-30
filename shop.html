@@ -42,6 +42,12 @@ const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let money = 0;
+var link = document.querySelector("link[rel~='icon']");
+if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    document.head.appendChild(link);
+}
 async function initPage() {
     const { data: { session } } = await supabaser.auth.getSession();
     
@@ -93,6 +99,12 @@ async function loadNotifications() {
 
     if (requests.length === 0 && incomingRenames.length === 0) {
         document.getElementById("notifbell").src = "bell.png";
+        link.href = 'notificon.ico';
+        const audio = new Audio();
+        audio.src = "notifsnd.mp3";
+        audio.play().catch(error => {
+    console.error("Playback failed:", error);
+    });
         return;
     } else {
       document.getElementById("notifbell").src = "notif.png";
