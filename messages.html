@@ -241,6 +241,10 @@ const MOD_UID = "0996c7e8-6e8b-4725-920b-1f1c162259b0";
 const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get('room');
 
+if (roomId && roomId.startsWith('dm_')) {
+    notificationToggle.style.display = 'none';
+}
+
 if (!roomId) {
   alert("No chatroom specified.");
   window.location.href = "index.html";
@@ -495,6 +499,22 @@ async function loadMessages() {
         .eq('chatroom_id', roomId)
         .eq('user_id', user.id)
         .select();
+  const { error: notificationReadError } = await db
+  .from('chatroom_notifications')
+  .update({
+    last_read_sequence: newestSequence,
+    up_to_date: true,
+    updated_at: new Date().toISOString()
+  })
+  .eq('chatroom_id', roomId)
+  .eq('user_id', currentUserId);
+
+if (notificationReadError) {
+  console.error(
+    'Could not mark notifications as read:',
+    notificationReadError
+  );
+}
     console.log("Updated membership:", updatedRows);
     console.log("Update error:", readError);
     if (readError) {
