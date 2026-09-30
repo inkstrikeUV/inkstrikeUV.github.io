@@ -137,6 +137,11 @@ const dmMemberships = (memberships || []).filter(
 );
 
 for (const membership of dmMemberships) {
+
+    if (!document.hidden && membership.chatroom_id === roomId) {
+        continue;
+    }
+
     const lastRead = membership.last_read_sequence || 0;
 
     const { data: unreadMessages, error: messageError } =
@@ -188,6 +193,47 @@ window.addEventListener('scroll', () => {
     }
     lastScrollY = window.scrollY;
 });
+
+
+function listenForNotificationMessages() {
+    db
+        .channel('notification-messages')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages'
+            },
+            async (payload) => {
+                const message = payload.new;
+
+                // Ignore messages sent by yourself
+                if (message.sender_id === currentUserId) {
+                    return;
+                }
+
+                // If we're actively viewing this exact DM,
+                // don't create a notification for it.
+                if (
+                    !document.hidden &&
+                    message.chatroom_id === roomId
+                ) {
+                    return;
+                }
+
+                // Something new happened somewhere we're not actively viewing.
+                document.getElementById("notifbell").src = "notif.png";
+                link.href = "notificon.ico";
+
+                const audio = new Audio("notifsnd.mp3");
+                audio.play().catch(error => {
+                    console.error("Playback failed:", error);
+                });
+            }
+        )
+        .subscribe();
+}
 
 const MOD_UID = "0996c7e8-6e8b-4725-920b-1f1c162259b0";
 
@@ -455,7 +501,9 @@ messageForm.addEventListener('submit', async (e) => {
   }
 });
 
-initializeChatroom();
+initializeChatroom().then(() => {
+    listenForNotificationMessages();
+});
 </script>
 
 <footer><a href="../index.html" style="color:#300385"><center>hoam :3</center></a></footer>
