@@ -207,22 +207,15 @@ function listenForNotificationMessages() {
             },
             async (payload) => {
                 const message = payload.new;
-
-                // Ignore messages sent by yourself
                 if (message.sender_id === currentUserId) {
                     return;
                 }
-
-                // If we're actively viewing this exact DM,
-                // don't create a notification for it.
                 if (
                     !document.hidden &&
                     message.chatroom_id === roomId
                 ) {
                     return;
                 }
-
-                // Something new happened somewhere we're not actively viewing.
                 document.getElementById("notifbell").src = "notif.png";
                 link.href = "notificon.ico";
 

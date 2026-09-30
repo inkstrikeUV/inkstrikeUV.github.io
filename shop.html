@@ -1,6 +1,6 @@
 <html>
 <head>
-  <title>Shop</title>
+  <title>headerbuilder</title>
   <link rel="stylesheet" href="stylesheet.css">
   <link rel="icon" type="image/x-icon" href="icon.ico">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -180,5 +180,38 @@ window.addEventListener('scroll', () => {
     }
     lastScrollY = window.scrollY;
 });
+function listenForNotificationMessages() {
+    db
+        .channel('notification-messages')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages'
+            },
+            async (payload) => {
+                const message = payload.new;
+                if (message.sender_id === currentUserId) {
+                    return;
+                }
+                if (
+                    !document.hidden &&
+                    message.chatroom_id === roomId
+                ) {
+                    return;
+                }
+                document.getElementById("notifbell").src = "notif.png";
+                link.href = "notificon.ico";
+
+                const audio = new Audio("notifsnd.mp3");
+                audio.play().catch(error => {
+                    console.error("Playback failed:", error);
+                });
+            }
+        )
+        .subscribe();
+}
+listenForNotificationMessages()
 </script>
 </html>
