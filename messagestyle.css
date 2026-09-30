@@ -5,9 +5,6 @@
 html {
     font-family: font; font-size: xx-large; color:#ffffff;
 }
-footer {
-    background-color:#8f54ff; color:#300385; font-family: font; position:fixed; bottom: 0; left: 0; right: 0; text-align: center;
-}
 header {
     background-color: #8f54ff; 
     color: #300385; 
