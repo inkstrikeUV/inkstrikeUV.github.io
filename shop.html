@@ -5,6 +5,7 @@
   <link rel="icon" type="image/x-icon" href="icon.ico">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+<body>
 <header>
   <div class="header-left">
     <div id="loginlink">
@@ -33,7 +34,6 @@
   </div>
 </header>
 
-<body>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 </body>
 
@@ -75,7 +75,13 @@ async function initPage() {
     }
 async function loadNotifications() {
     const { data: { session } } = await supabaser.auth.getSession();
-    const myId = session.user.id;
+    
+    if (!session) {
+        window.location.href = "loginpage.html";
+        return;
+    }
+
+const myId = session.user.id;
 
     const { data: requests, error: err1 } = await supabaser
         .from('relationships')
@@ -113,17 +119,16 @@ const { data: memberships, error: membershipError } =
 
 
     if (membershipError) {
-        console.error("Could not load DM memberships:", membershipError);
-    }
+    console.error("Could not load DM memberships:", membershipError);
+}
 
-    const unreadDMs = [];
+let hasUnreadDMs = false;
 
-    const dmMemberships = (memberships || []).filter(
+const dmMemberships = (memberships || []).filter(
     membership => membership.chatroom_id.startsWith("dm_")
 );
 
 for (const membership of dmMemberships) {
-
     const lastRead = membership.last_read_sequence || 0;
 
     const { data: unreadMessages, error: messageError } =
@@ -144,11 +149,11 @@ for (const membership of dmMemberships) {
     }
 
     if (unreadMessages && unreadMessages.length > 0) {
-        
+        hasUnreadDMs = true;
     }
 }
 
-    if (requests.length === 0 && incomingRenames.length === 0 && unreadMessages && unreadMessages.length > 0) {
+    if (requests.length === 0 && incomingRenames.length === 0 && !hasUnreadDMs) {
     document.getElementById("notifbell").src = "bell.png";
     link.href = "icon.ico";
     } else {
