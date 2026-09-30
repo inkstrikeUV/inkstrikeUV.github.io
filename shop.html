@@ -98,17 +98,17 @@ async function loadNotifications() {
     const incomingRenames = renames.filter(r => r.namerequesterid !== myId); 
 
     if (requests.length === 0 && incomingRenames.length === 0) {
-        document.getElementById("notifbell").src = "bell.png";
-        link.href = 'notificon.ico';
-        const audio = new Audio();
-        audio.src = "notifsnd.mp3";
-        audio.play().catch(error => {
-    console.error("Playback failed:", error);
-    });
-        return;
+    document.getElementById("notifbell").src = "bell.png";
+    link.href = "icon.ico";
     } else {
-      document.getElementById("notifbell").src = "notif.png";
-    }};
+    document.getElementById("notifbell").src = "notif.png";
+    link.href = "notificon.ico";
+
+    const audio = new Audio("notifsnd.mp3");
+    audio.play().catch(error => {
+        console.error("Playback failed:", error);
+    });
+  }};
 document.addEventListener("DOMContentLoaded", function() {
     initPage();
     loadNotifications();
