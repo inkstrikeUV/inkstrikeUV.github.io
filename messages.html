@@ -241,9 +241,6 @@ const MOD_UID = "0996c7e8-6e8b-4725-920b-1f1c162259b0";
 const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get('room');
 
-if (roomId && roomId.startsWith('dm_')) {
-    notificationToggle.style.display = 'none';
-}
 
 if (!roomId) {
   alert("No chatroom specified.");
@@ -254,6 +251,10 @@ const chatBox = document.getElementById('chat-box');
 const messageForm = document.getElementById('message-form');
 const messageInput = document.getElementById('message-input');
 const notificationToggle = document.getElementById('notification-toggle');
+
+if (roomId && roomId.startsWith('dm_')) {
+    notificationToggle.style.display = 'none';
+}
 
 async function loadNotificationStatus() {
   if (!currentUserId || !roomId) return;
