@@ -97,7 +97,58 @@ async function loadNotifications() {
 
     const incomingRenames = renames.filter(r => r.namerequesterid !== myId); 
 
-    if (requests.length === 0 && incomingRenames.length === 0) {
+const { data: memberships, error: membershipError } =
+        await supabaser
+            .from('chatroom_allowed_users')
+            .select(`
+                chatroom_id,
+                last_read_sequence,
+                chatrooms!inner (
+                    id,
+                    privacy_type
+                )
+            `)
+            .eq('user_id', myId)
+            .eq('chatrooms.privacy_type', 'private');
+
+
+    if (membershipError) {
+        console.error("Could not load DM memberships:", membershipError);
+    }
+
+    const unreadDMs = [];
+
+    const dmMemberships = (memberships || []).filter(
+    membership => membership.chatroom_id.startsWith("dm_")
+);
+
+for (const membership of dmMemberships) {
+
+    const lastRead = membership.last_read_sequence || 0;
+
+    const { data: unreadMessages, error: messageError } =
+        await supabaser
+            .from('messages')
+            .select('id, sequence_number, sender_id, content')
+            .eq('chatroom_id', membership.chatroom_id)
+            .gt('sequence_number', lastRead)
+            .neq('sender_id', myId)
+            .order('sequence_number', { ascending: true });
+
+    if (messageError) {
+        console.error(
+            "Could not load unread messages:",
+            messageError
+        );
+        continue;
+    }
+
+    if (unreadMessages && unreadMessages.length > 0) {
+        
+    }
+}
+
+    if (requests.length === 0 && incomingRenames.length === 0 && unreadMessages && unreadMessages.length > 0) {
     document.getElementById("notifbell").src = "bell.png";
     link.href = "icon.ico";
     } else {
