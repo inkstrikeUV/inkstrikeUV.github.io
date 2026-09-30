@@ -1,6 +1,6 @@
 <html>
 <head>
-  <title>Violet's cool website</title>
+  <title>Messages</title>
   <link rel="stylesheet" href="messagestyle.css">
   <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -48,7 +48,7 @@
 <script>
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
-const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let money = 0;
 var link = document.querySelector("link[rel~='icon']");
 if (!link) {
@@ -57,12 +57,12 @@ if (!link) {
     document.head.appendChild(link);
 }
 async function initPage() {
-    const { data: { session } } = await supabaser.auth.getSession();
+    const { data: { session } } = await db.auth.getSession();
     
     if (session) {
         document.getElementById('loginlink').style.display = 'none';
         document.getElementById('accountlink').style.display = 'block';
-        const { data, error } = await supabaser
+        const { data, error } = await db
             .from('profiles')
             .select('money, username')
             .eq('id', session.user.id)
@@ -82,7 +82,7 @@ async function initPage() {
         }
     }
 async function loadNotifications() {
-    const { data: { session } } = await supabaser.auth.getSession();
+    const { data: { session } } = await db.auth.getSession();
     
     if (!session) {
         window.location.href = "loginpage.html";
@@ -91,13 +91,13 @@ async function loadNotifications() {
 
 const myId = session.user.id;
 
-    const { data: requests, error: err1 } = await supabaser
+    const { data: requests, error: err1 } = await db
         .from('relationships')
         .select('id, id_1, profiles!relationships_id_1_fkey(username)')
         .eq('id_2', myId)
         .eq('status', 'requested');
 
-    const { data: renames, error: err2 } = await supabaser
+    const { data: renames, error: err2 } = await db
         .from('relationships')
         .select('id, id_1, id_2, proposed_name, namerequesterid, target:profiles!namerequesterid(username)') // <-- Changed constraint name to column name
         .eq('display_request', true)
@@ -112,7 +112,7 @@ const myId = session.user.id;
     const incomingRenames = renames.filter(r => r.namerequesterid !== myId); 
 
 const { data: memberships, error: membershipError } =
-        await supabaser
+        await db
             .from('chatroom_allowed_users')
             .select(`
                 chatroom_id,
@@ -140,7 +140,7 @@ for (const membership of dmMemberships) {
     const lastRead = membership.last_read_sequence || 0;
 
     const { data: unreadMessages, error: messageError } =
-        await supabaser
+        await db
             .from('messages')
             .select('id, sequence_number, sender_id, content')
             .eq('chatroom_id', membership.chatroom_id)
@@ -189,11 +189,15 @@ window.addEventListener('scroll', () => {
     lastScrollY = window.scrollY;
 });
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
 const MOD_UID = "0996c7e8-6e8b-4725-920b-1f1c162259b0";
 
 const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get('room');
+
+if (!roomId) {
+  alert("No chatroom specified.");
+  window.location.href = "index.html";
+}
 
 const chatBox = document.getElementById('chat-box');
 const messageForm = document.getElementById('message-form');
@@ -221,6 +225,7 @@ let currentUserId = null;
 
 async function appendMessage(msg) {
   const senderProfile = await getUserProfile(msg.sender_id);
+
   const pfpSrc = senderProfile.avatar_url || 'default-pfp.png';
   const userColor = senderProfile.bgcolor || '#8f54ff';
 
@@ -229,23 +234,41 @@ async function appendMessage(msg) {
   div.dataset.messageId = msg.id;
   div.style.setProperty('--user-color', userColor);
 
-  let deleteButton = "";
+  const profileLink = document.createElement('a');
+  profileLink.href =
+    `profile.html?user=${encodeURIComponent(senderProfile.username)}`;
+
+  const pfp = document.createElement('img');
+  pfp.className = 'chat-pfp';
+  pfp.src = pfpSrc;
+  pfp.alt = `${senderProfile.username}'s pfp`;
+
+  profileLink.appendChild(pfp);
+
+  const meta = document.createElement('span');
+  meta.className = 'meta';
+  meta.textContent = `${senderProfile.username}:`;
+
+  const content = document.createElement('span');
+  content.className = 'msg-content';
+  content.textContent = msg.content;
+
+  div.appendChild(profileLink);
+  div.appendChild(meta);
+  div.appendChild(content);
 
   if (currentUserId === MOD_UID) {
-    deleteButton = `
-      <button style="background-color: #ff0000;" onclick="deleteMessage('${msg.id}')">
-        Delete
-      </button>`;
+    const deleteButton = document.createElement('button');
+
+    deleteButton.textContent = 'Delete';
+    deleteButton.style.backgroundColor = '#ff0000';
+
+    deleteButton.addEventListener('click', () => {
+      deleteMessage(msg.id);
+    });
+
+    div.appendChild(deleteButton);
   }
-
-  div.innerHTML = `
-    <a href="profile.html?user=${senderProfile.username}">
-      <img class="chat-pfp" src="${pfpSrc}" alt="${senderProfile.username}'s pfp">
-    </a>
-
-    <span class="meta">${senderProfile.username}:</span>
-    <span class="msg-content">${msg.content}</span>
-    ${deleteButton}`;
 
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
