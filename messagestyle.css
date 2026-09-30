@@ -9,17 +9,80 @@ footer {
     background-color:#8f54ff; color:#300385; font-family: font; position:fixed; bottom: 0; left: 0; right: 0; text-align: center;
 }
 header {
-    background-color:#8f54ff; 
-    color:#300385; 
+    background-color: #8f54ff; 
+    color: #300385; 
     font-family: font; 
-    position:fixed; top: 0; left: 0; right: 0; 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
     display: flex; 
     justify-content: space-between;
     align-items: center; 
     padding: 10px 20px;
     box-sizing: border-box;
     z-index: 9999;
+    transition: transform 0.3s ease-in-out; 
 }
+
+header.hidden {
+    transform: translateY(-100%);
+}
+
+.header-left, 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+}
+
+.header-right {
+    justify-content: flex-end; 
+}
+
+.header-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; 
+}
+
+header a {
+    font-weight: 600;
+    text-decoration: none;
+    color: #300385;
+    transition: opacity 0.15s ease;
+}
+
+header a:hover {
+    opacity: 0.8;
+}
+
+.money-container {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+#money-display {
+    font-weight: 700;
+}
+
+.notification-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.notification-wrapper img {
+    display: block;
+    transition: transform 0.1s ease;
+}
+
+.notification-wrapper img:active {
+    transform: scale(0.92);
+}
+
 
 body { 
 background: linear-gradient(0deg, rgba(53, 0, 117, 1) 0%, rgba(131, 70, 212, 1) 60%, rgba(237, 222, 255, 1) 100%); 
