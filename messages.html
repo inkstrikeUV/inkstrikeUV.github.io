@@ -8,9 +8,31 @@
 <body>
 
 <header>
-  <div id="loginlink"><a href="loginpage.html" style="color:#300385">sign in</a></div>
-  <div id="accountlink" style="display: none;"><a href="profile.html" style="color:#300385"><span id="username-display">Loading...</span></a></div>
-  <a href="notifications.html"><img src="bell.png" height="50" width="50"></a>
+  <div class="header-left">
+    <div id="loginlink">
+      <a href="loginpage.html" style="color:#300385">sign in</a>
+    </div>
+    <div id="accountlink" style="display: none;">
+      <a href="profile.html" style="color:#300385"><span id="username-display">Loading...</span></a>
+    </div>
+    <div class="money-container">
+      Money:<span id="money-display">Loading...</span>
+    </div>
+  </div>
+
+  <div class="header-center">
+    <img src="ezgif-6dbe54e04356ef45.gif" height="50">
+  </div>
+
+  <div class="header-right">
+
+    <div class="notification-wrapper">
+      <a href="index.html"><img src="hoamcolonthree.png" height="50" width="50" alt="Hoam :3"></a>
+      <a href="notifications.html">
+        <img id="notifbell" src="bell.png" height="50" width="50" alt="Notifications">
+      </a>
+    </div>
+  </div>
 </header>
 
 <main style="padding: 20px;">
@@ -26,6 +48,146 @@
 <script>
 const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
+const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let money = 0;
+var link = document.querySelector("link[rel~='icon']");
+if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    document.head.appendChild(link);
+}
+async function initPage() {
+    const { data: { session } } = await supabaser.auth.getSession();
+    
+    if (session) {
+        document.getElementById('loginlink').style.display = 'none';
+        document.getElementById('accountlink').style.display = 'block';
+        const { data, error } = await supabaser
+            .from('profiles')
+            .select('money, username')
+            .eq('id', session.user.id)
+            .single();
+        if (data) {
+            money = data.money;
+            document.getElementById("money-display").innerText = money;
+            
+            document.getElementById("username-display").innerText = data.username || "User";
+        } else if (error) {
+            console.error("Database error:", error.message);
+            document.getElementById("money-display").innerText = "Error";
+          };
+            
+        } else {
+            window.location.href = "loginpage.html";
+        }
+    }
+async function loadNotifications() {
+    const { data: { session } } = await supabaser.auth.getSession();
+    
+    if (!session) {
+        window.location.href = "loginpage.html";
+        return;
+    }
+
+const myId = session.user.id;
+
+    const { data: requests, error: err1 } = await supabaser
+        .from('relationships')
+        .select('id, id_1, profiles!relationships_id_1_fkey(username)')
+        .eq('id_2', myId)
+        .eq('status', 'requested');
+
+    const { data: renames, error: err2 } = await supabaser
+        .from('relationships')
+        .select('id, id_1, id_2, proposed_name, namerequesterid, target:profiles!namerequesterid(username)') // <-- Changed constraint name to column name
+        .eq('display_request', true)
+        .or(`id_1.eq.${myId},id_2.eq.${myId}`);
+
+
+    if (err1 || err2) {
+        console.error({ err1, err2 });
+        return;
+    }
+
+    const incomingRenames = renames.filter(r => r.namerequesterid !== myId); 
+
+const { data: memberships, error: membershipError } =
+        await supabaser
+            .from('chatroom_allowed_users')
+            .select(`
+                chatroom_id,
+                last_read_sequence,
+                chatrooms!inner (
+                    id,
+                    privacy_type
+                )
+            `)
+            .eq('user_id', myId)
+            .eq('chatrooms.privacy_type', 'private');
+
+
+    if (membershipError) {
+    console.error("Could not load DM memberships:", membershipError);
+}
+
+let hasUnreadDMs = false;
+
+const dmMemberships = (memberships || []).filter(
+    membership => membership.chatroom_id.startsWith("dm_")
+);
+
+for (const membership of dmMemberships) {
+    const lastRead = membership.last_read_sequence || 0;
+
+    const { data: unreadMessages, error: messageError } =
+        await supabaser
+            .from('messages')
+            .select('id, sequence_number, sender_id, content')
+            .eq('chatroom_id', membership.chatroom_id)
+            .gt('sequence_number', lastRead)
+            .neq('sender_id', myId)
+            .order('sequence_number', { ascending: true });
+
+    if (messageError) {
+        console.error(
+            "Could not load unread messages:",
+            messageError
+        );
+        continue;
+    }
+
+    if (unreadMessages && unreadMessages.length > 0) {
+        hasUnreadDMs = true;
+    }
+}
+
+    if (requests.length === 0 && incomingRenames.length === 0 && !hasUnreadDMs) {
+    document.getElementById("notifbell").src = "bell.png";
+    link.href = "icon.ico";
+    } else {
+    document.getElementById("notifbell").src = "notif.png";
+    link.href = "notificon.ico";
+
+    const audio = new Audio("notifsnd.mp3");
+    audio.play().catch(error => {
+        console.error("Playback failed:", error);
+    });
+  }};
+document.addEventListener("DOMContentLoaded", function() {
+    initPage();
+    loadNotifications();
+});
+let lastScrollY = window.scrollY;
+const customHeader = document.querySelector('header');
+
+window.addEventListener('scroll', () => {
+    if (window.scrollY > lastScrollY && window.scrollY > 50) {
+        customHeader.classList.add('hidden');
+    } else {
+        customHeader.classList.remove('hidden');
+    }
+    lastScrollY = window.scrollY;
+});
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
 const MOD_UID = "0996c7e8-6e8b-4725-920b-1f1c162259b0";
