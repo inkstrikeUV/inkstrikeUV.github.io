@@ -173,8 +173,9 @@ for (const membership of dmMemberships) {
         hasUnreadDMs = true;
     }
 }
-
-    if (requests.length === 0 && incomingRenames.length === 0 && !hasUnreadDMs) {
+    const hasUnreadChatroomNotifications =
+    await checkChatroomNotifications();
+    if (requests.length === 0 && incomingRenames.length === 0 && !hasUnreadDMs && !hasUnreadChatroomNotifications) {
     document.getElementById("notifbell").src = "bell.png";
     link.href = "icon.ico";
     } else {
@@ -334,6 +335,29 @@ async function toggleNotifications() {
 
     notificationToggle.textContent = 'Disable notifications';
   }
+}
+
+async function checkChatroomNotifications() {
+    if (!currentUserId) return false;
+
+    const { data, error } = await db
+        .from('chatroom_notifications')
+        .select('chatroom_id')
+        .eq('user_id', currentUserId)
+        .eq('enabled', true)
+        .eq('up_to_date', false);
+
+    if (error) {
+        console.error(
+            "Could not check chatroom notifications:",
+            error
+        );
+        return false;
+    }
+
+    return (data || []).some(
+        notification => notification.chatroom_id !== roomId
+    );
 }
 
 notificationToggle.addEventListener('click', toggleNotifications);
