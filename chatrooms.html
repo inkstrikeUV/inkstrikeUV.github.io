@@ -627,6 +627,317 @@ async function saveChatroomEdits(roomId) {
             : "public"
     );
 }
+async function manageMembers(roomId) {
+    const { data: { session } } =
+        await supabaser.auth.getSession();
+
+    if (!session) {
+        alert("Please log in first!");
+        return;
+    }
+
+    const { data: room, error: roomError } =
+        await supabaser
+            .from("chatrooms")
+            .select("id, name, creator_id, privacy_type")
+            .eq("id", roomId)
+            .single();
+
+    if (roomError || !room) {
+        alert("Could not load chatroom.");
+        return;
+    }
+
+    if (room.creator_id !== session.user.id) {
+        alert("You aren't the owner of this chatroom.");
+        return;
+    }
+
+    if (room.privacy_type !== "private") {
+        alert("Only private chatrooms have members to manage.");
+        return;
+    }
+
+    showMemberManagement(room);
+}
+async function showMemberManagement(room) {
+    const content = document.getElementById("chat-content");
+
+    content.innerHTML = `
+        <h1>Manage Members</h1>
+        <h2>${room.name}</h2>
+
+        <div id="current-members">
+            Loading members...
+        </div>
+
+        <br>
+
+        <button onclick="addChatroomMember('${room.id}')">
+            Add Member
+        </button>
+
+        <button onclick="manageChatroom('${room.id}')">
+            Back
+        </button>
+    `;
+
+    await loadChatroomMembers(room);
+}
+async function loadChatroomMembers(room) {
+    const memberList =
+        document.getElementById("current-members");
+
+    if (!memberList) return;
+
+    const { data: { session } } =
+        await supabaser.auth.getSession();
+
+    if (!session) return;
+
+    const { data: members, error } =
+        await supabaser
+            .from("chatroom_allowed_users")
+            .select("user_id")
+            .eq("chatroom_id", room.id);
+
+    if (error) {
+        console.error("Could not load members:", error);
+        memberList.innerHTML =
+            "<p>Could not load members.</p>";
+        return;
+    }
+
+    if (!members || members.length === 0) {
+        memberList.innerHTML =
+            "<p>This chatroom has no members.</p>";
+        return;
+    }
+
+    memberList.innerHTML = "";
+
+    for (const member of members) {
+
+        const { data: profile } =
+            await supabaser
+                .from("profiles")
+                .select("username")
+                .eq("id", member.user_id)
+                .single();
+
+        const username =
+            profile?.username || "Unknown User";
+
+        const memberDiv =
+            document.createElement("div");
+
+        memberDiv.style.margin = "10px 0";
+
+        if (member.user_id === room.creator_id) {
+
+            memberDiv.innerHTML = `
+                <strong>${username}</strong>
+                <span> (Owner)</span>
+            `;
+
+        } else {
+
+            memberDiv.innerHTML = `
+                <strong>${username}</strong>
+
+                <button
+                    onclick="removeChatroomMember(
+                        '${room.id}',
+                        '${member.user_id}'
+                    )"
+                >
+                    Remove
+                </button>
+            `;
+        }
+
+        memberList.appendChild(memberDiv);
+    }
+}
+async function removeChatroomMember(roomId, userId) {
+    const { data: { session } } =
+        await supabaser.auth.getSession();
+
+    if (!session) {
+        alert("Please log in first!");
+        return;
+    }
+
+    if (!confirm("Remove this member from the chatroom?")) {
+        return;
+    }
+
+    const { data: room, error: roomError } =
+        await supabaser
+            .from("chatrooms")
+            .select("creator_id")
+            .eq("id", roomId)
+            .single();
+
+    if (roomError || !room) {
+        alert("Could not find chatroom.");
+        return;
+    }
+
+    if (room.creator_id !== session.user.id) {
+        alert("You aren't the owner of this chatroom.");
+        return;
+    }
+
+    if (userId === room.creator_id) {
+        alert("The owner cannot be removed.");
+        return;
+    }
+
+    const { error } =
+        await supabaser
+            .from("chatroom_allowed_users")
+            .delete()
+            .eq("chatroom_id", roomId)
+            .eq("user_id", userId);
+
+    if (error) {
+        console.error("Could not remove member:", error);
+        alert("Could not remove member: " + error.message);
+        return;
+    }
+
+    await loadChatroomMembers({
+        id: roomId,
+        creator_id: room.creator_id
+    });
+}
+async function addChatroomMember(roomId) {
+    const { data: { session } } =
+        await supabaser.auth.getSession();
+
+    if (!session) {
+        alert("Please log in first!");
+        return;
+    }
+
+    const { data: room, error: roomError } =
+        await supabaser
+            .from("chatrooms")
+            .select("id, creator_id")
+            .eq("id", roomId)
+            .single();
+
+    if (roomError || !room) {
+        alert("Could not find chatroom.");
+        return;
+    }
+
+    if (room.creator_id !== session.user.id) {
+        alert("You aren't the owner of this chatroom.");
+        return;
+    }
+
+    const { data: relationships, error } =
+        await supabaser
+            .from("relationships")
+            .select(`
+                id_1,
+                id_2,
+                profile1:profiles!relationships_id_1_fkey(username),
+                profile2:profiles!relationships_id_2_fkey(username)
+            `)
+            .eq("status", "friends")
+            .or(
+                `id_1.eq.${session.user.id},id_2.eq.${session.user.id}`
+            );
+
+    if (error) {
+        console.error("Could not load friends:", error);
+        alert("Could not load your friends.");
+        return;
+    }
+
+    const { data: currentMembers } =
+        await supabaser
+            .from("chatroom_allowed_users")
+            .select("user_id")
+            .eq("chatroom_id", roomId);
+
+    const memberIds = new Set(
+        (currentMembers || []).map(member => member.user_id)
+    );
+
+    const availableFriends = (relationships || [])
+        .map(friendship => {
+
+            if (friendship.id_1 === session.user.id) {
+                return {
+                    id: friendship.id_2,
+                    username:
+                        friendship.profile2?.username ||
+                        "Unknown User"
+                };
+            }
+
+            return {
+                id: friendship.id_1,
+                username:
+                    friendship.profile1?.username ||
+                    "Unknown User"
+            };
+        })
+        .filter(friend => !memberIds.has(friend.id));
+
+    if (availableFriends.length === 0) {
+        alert("All of your friends are already in this chatroom.");
+        return;
+    }
+
+    const friendChoices = availableFriends
+        .map(friend => `${friend.username} (${friend.id})`)
+        .join("\n");
+
+    const chosenId = prompt(
+        "Enter the ID of the friend you want to add:\n\n" +
+        friendChoices
+    );
+
+    if (!chosenId) return;
+
+    const friend = availableFriends.find(
+        friend => friend.id === chosenId.trim()
+    );
+
+    if (!friend) {
+        alert("That friend was not found.");
+        return;
+    }
+
+    const { error: insertError } =
+        await supabaser
+            .from("chatroom_allowed_users")
+            .insert({
+                chatroom_id: roomId,
+                user_id: friend.id,
+                last_read_sequence: 0
+            });
+
+    if (insertError) {
+        console.error("Could not add member:", insertError);
+        alert("Could not add member: " + insertError.message);
+        return;
+    }
+
+    alert(`${friend.username} was added to the chatroom.`);
+
+    await showMemberManagement({
+        id: roomId,
+        name: "Chatroom",
+        creator_id: room.creator_id,
+        privacy_type: "private"
+    });
+}
 
 function openChatroom(roomId) {
 
