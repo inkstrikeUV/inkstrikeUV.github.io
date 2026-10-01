@@ -358,19 +358,28 @@ async function loadPrivateRooms() {
         const roomDiv = document.createElement("div");
 
         roomDiv.className = "chatroom-entry";
-
-        roomDiv.innerHTML = `
-            <h3>${room.name}</h3>
-
+        let managementButton = "";
+        if (room.creator_id === myId) {
+        managementButton = 
+        `<button onclick="manageChatroom('${room.id}')">
+            Manage Chatroom
+            </button>`;
+        } else {
+            managementButton = 
+            `<button onclick="leaveChatroom('${room.id}')">
+                Leave Chatroom
+                </button>
+                `;
+            }
+            roomDiv.innerHTML = 
+            `<h3>${room.name}</h3>
             <button onclick="openChatroom('${room.id}')">
                 Enter Chatroom
-            </button>
-        `;
-
-        roomList.appendChild(roomDiv);
-    });
-}
-
+                </button>
+                ${managementButton}`;
+                roomList.appendChild(roomDiv);
+            });
+        }
 async function loadDMs() {
 
     const roomList = document.getElementById("dm-rooms");
@@ -456,6 +465,168 @@ roomDiv.innerHTML = `
         roomList.appendChild(roomDiv);
 }};
 
+async function leaveChatroom(roomId) {
+    const { data: { session } } = await supabaser.auth.getSession();
+
+    if (!session) {
+        alert("Please log in first!");
+        return;
+    }
+
+    if (!confirm("Are you sure you want to leave this chatroom?")) {
+        return;
+    }
+
+    const { error } = await supabaser
+        .from("chatroom_allowed_users")
+        .delete()
+        .eq("chatroom_id", roomId)
+        .eq("user_id", session.user.id);
+
+    if (error) {
+        console.error("Could not leave chatroom:", error);
+        alert("Could not leave the chatroom: " + error.message);
+        return;
+    }
+
+    alert("You left the chatroom.");
+    showTab("private");
+}
+
+async function editChatroom(roomId) {
+    const { data: { session } } =
+        await supabaser.auth.getSession();
+
+    if (!session) {
+        alert("Please log in first!");
+        return;
+    }
+
+    const { data: room, error } = await supabaser
+        .from("chatrooms")
+        .select("id, name, creator_id, privacy_type")
+        .eq("id", roomId)
+        .single();
+
+    if (error || !room) {
+        alert("Could not load chatroom.");
+        return;
+    }
+
+    if (room.creator_id !== session.user.id) {
+        alert("You aren't the owner of this chatroom.");
+        return;
+    }
+
+    const content = document.getElementById("chat-content");
+
+    content.innerHTML = `
+        <h1>Edit Chatroom</h1>
+
+        <label>
+            Chatroom name:
+            <input
+                id="edit-room-name"
+                type="text"
+                maxlength="50"
+                value="${room.name.replace(/"/g, '&quot;')}"
+            >
+        </label>
+
+        <br><br>
+
+        <label>
+            Privacy:
+            <select id="edit-room-privacy">
+                <option value="public"
+                    ${room.privacy_type === "public" ? "selected" : ""}>
+                    Public
+                </option>
+
+                <option value="private"
+                    ${room.privacy_type === "private" ? "selected" : ""}>
+                    Private
+                </option>
+            </select>
+        </label>
+
+        <br><br>
+
+        <button onclick="saveChatroomEdits('${room.id}')">
+            Save Changes
+        </button>
+
+        <button onclick="manageChatroom('${room.id}')">
+            Cancel
+        </button>
+    `;
+}
+
+async function saveChatroomEdits(roomId) {
+    const { data: { session } } =
+        await supabaser.auth.getSession();
+
+    if (!session) {
+        alert("Please log in first!");
+        return;
+    }
+
+    const nameInput =
+        document.getElementById("edit-room-name");
+
+    const privacyInput =
+        document.getElementById("edit-room-privacy");
+
+    const newName =
+        nameInput.value.trim();
+
+    const newPrivacy =
+        privacyInput.value;
+
+    if (!newName) {
+        alert("Please give your chatroom a name!");
+        return;
+    }
+
+    const { data: room, error: roomError } =
+        await supabaser
+            .from("chatrooms")
+            .select("creator_id")
+            .eq("id", roomId)
+            .single();
+
+    if (roomError || !room) {
+        alert("Could not find chatroom.");
+        return;
+    }
+
+    if (room.creator_id !== session.user.id) {
+        alert("You aren't the owner of this chatroom.");
+        return;
+    }
+
+    const { error } = await supabaser
+        .from("chatrooms")
+        .update({
+            name: newName,
+            privacy_type: newPrivacy
+        })
+        .eq("id", roomId);
+
+    if (error) {
+        console.error("Could not update chatroom:", error);
+        alert("Could not save changes: " + error.message);
+        return;
+    }
+
+    alert("Chatroom updated!");
+
+    showTab(
+        newPrivacy === "private"
+            ? "private"
+            : "public"
+    );
+}
 
 function openChatroom(roomId) {
 
@@ -463,6 +634,105 @@ function openChatroom(roomId) {
         `messages.html?room=${encodeURIComponent(roomId)}`;
 
 }
+async function manageChatroom(roomId) {
+    const { data: { session } } =
+        await supabaser.auth.getSession();
+
+    if (!session) {
+        alert("Please log in first!");
+        return;
+    }
+
+    const { data: room, error } = await supabaser
+        .from("chatrooms")
+        .select("id, name, creator_id, privacy_type")
+        .eq("id", roomId)
+        .single();
+
+    if (error || !room) {
+        alert("Could not load chatroom.");
+        return;
+    }
+
+    if (room.creator_id !== session.user.id) {
+        alert("You aren't the owner of this chatroom.");
+        return;
+    }
+
+    showChatroomManagement(room);
+}
+
+function showChatroomManagement(room) {
+    const content = document.getElementById("chat-content");
+
+    content.innerHTML = `
+        <h1>Manage Chatroom</h1>
+
+        <h2>${room.name}</h2>
+
+        <button onclick="openChatroom('${room.id}')">
+            Open Chatroom
+        </button>
+
+        <br><br>
+
+        <button onclick="editChatroom('${room.id}')">
+            Edit Chatroom
+        </button>
+
+        <button onclick="manageMembers('${room.id}')">
+            Manage Members
+        </button>
+
+        <br><br>
+
+        <button onclick="closeChatroom('${room.id}')">
+            Close Chatroom
+        </button>
+
+        <br><br>
+
+        <button onclick="showTab('private')">
+            Back
+        </button>
+    `;
+}
+function showChatroomManagement(room) {
+    const content = document.getElementById("chat-content");
+
+    content.innerHTML = `
+        <h1>Manage Chatroom</h1>
+
+        <h2>${room.name}</h2>
+
+        <button onclick="openChatroom('${room.id}')">
+            Open Chatroom
+        </button>
+
+        <br><br>
+
+        <button onclick="editChatroom('${room.id}')">
+            Edit Chatroom
+        </button>
+
+        <button onclick="manageMembers('${room.id}')">
+            Manage Members
+        </button>
+
+        <br><br>
+
+        <button onclick="closeChatroom('${room.id}')">
+            Close Chatroom
+        </button>
+
+        <br><br>
+
+        <button onclick="showTab('private')">
+            Back
+        </button>
+    `;
+}
+
 async function createChatroom() {
 
     const { data: { session } } =

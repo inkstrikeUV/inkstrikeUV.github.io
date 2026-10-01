@@ -408,12 +408,36 @@ async function appendMessage(msg) {
   meta.textContent = `${senderProfile.username}:`;
 
   const content = document.createElement('span');
-  content.className = 'msg-content';
-  content.textContent = msg.content;
+  content.className = 'msg-content'; 
+  if (blockRelationship) {
+      const blockedText = document.createElement('span');
+      blockedText.textContent = 'You have blocked this user, ';
+  
+      const showButton = document.createElement('button');
+      showButton.textContent = 'show anyway?';
+      showButton.addEventListener('click', () => {
+      showButton.addEventListener('click', () => {
+        content.textContent = msg.content;
+      });
+    });
+    content.appendChild(blockedText);
+    content.appendChild(showButton);
+  } else {
+    content.textContent = msg.content;
+  }
+  
+  const timestamp = document.createElement('span');
+  timestamp.className = 'message-time';
+  const sentAt = new Date(msg.created_at);
+  timestamp.textContent = sentAt.toLocaleTimeString([], {
+      hour: 'numeric',
+      minute: '2-digit'
+});
 
   div.appendChild(profileLink);
   div.appendChild(meta);
   div.appendChild(content);
+  div.appendChild(timestamp);
 
   if (currentUserId === MOD_UID) {
     const deleteButton = document.createElement('button');
