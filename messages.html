@@ -381,7 +381,7 @@ async function getUserProfile(userId) {
   return data;
 }
 
-async function appendMessage(msg) {
+async function appendMessage(msg, scroll = true) {
     const senderProfile = await getUserProfile(msg.sender_id);
 
     const pfpSrc = senderProfile.avatar_url || 'default-pfp.png';
@@ -475,7 +475,7 @@ async function appendMessage(msg) {
     }
 
     chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    if (scroll) { chatBox.scrollTop = chatBox.scrollHeight;}
 }
 
 async function initializeChatroom() {
@@ -555,8 +555,10 @@ async function loadMessages() {
         return;
     }
     for (const msg of fetchedMessages) {
-        await appendMessage(msg);
+        await appendMessage(msg, false);
     }
+    chatBox.scrollTop = chatBox.scrollHeight; 
+
     const newestSequence =
         fetchedMessages[fetchedMessages.length - 1].sequence_number;
     console.log("Room:", roomId);
