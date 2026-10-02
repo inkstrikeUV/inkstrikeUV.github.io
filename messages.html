@@ -382,78 +382,100 @@ async function getUserProfile(userId) {
 }
 
 async function appendMessage(msg) {
-  const senderProfile = await getUserProfile(msg.sender_id);
+    const senderProfile = await getUserProfile(msg.sender_id);
 
-  const pfpSrc = senderProfile.avatar_url || 'default-pfp.png';
-  const userColor = senderProfile.bgcolor || '#8f54ff';
+    const pfpSrc = senderProfile.avatar_url || 'default-pfp.png';
+    const userColor = senderProfile.bgcolor || '#8f54ff';
 
-  const div = document.createElement('div');
-  div.className = 'message';
-  div.dataset.messageId = msg.id;
-  div.style.setProperty('--user-color', userColor);
+    const { data: blockRelationship, error: blockError } =
+        await db
+            .from('relationships')
+            .select('id')
+            .eq('id_1', currentUserId)
+            .eq('id_2', msg.sender_id)
+            .eq('status', 'blocked')
+            .maybeSingle();
 
-  const profileLink = document.createElement('a');
-  profileLink.href =
-    `profile.html?user=${encodeURIComponent(senderProfile.username)}`;
+    if (blockError) {
+        console.error("Could not check blocked user:", blockError);
+    }
 
-  const pfp = document.createElement('img');
-  pfp.className = 'chat-pfp';
-  pfp.src = pfpSrc;
-  pfp.alt = `${senderProfile.username}'s pfp`;
+    const div = document.createElement('div');
+    div.className = 'message';
+    div.dataset.messageId = msg.id;
+    div.style.setProperty('--user-color', userColor);
 
-  profileLink.appendChild(pfp);
+    const profileLink = document.createElement('a');
+    profileLink.href =
+        `profile.html?user=${encodeURIComponent(senderProfile.username)}`;
 
-  const meta = document.createElement('span');
-  meta.className = 'meta';
-  meta.textContent = `${senderProfile.username}:`;
+    const pfp = document.createElement('img');
+    pfp.className = 'chat-pfp';
+    pfp.src = pfpSrc;
+    pfp.alt = `${senderProfile.username}'s pfp`;
 
-  const content = document.createElement('span');
-  content.className = 'msg-content'; 
-  if (blockRelationship) {
-      const blockedText = document.createElement('span');
-      blockedText.textContent = 'You have blocked this user, ';
-  
-      const showButton = document.createElement('button');
-      showButton.textContent = 'show anyway?';
-      showButton.addEventListener('click', () => {
-      showButton.addEventListener('click', () => {
+    profileLink.appendChild(pfp);
+
+    const meta = document.createElement('span');
+    meta.className = 'meta';
+    meta.textContent = `${senderProfile.username}:`;
+
+    const content = document.createElement('span');
+    content.className = 'msg-content';
+
+    if (blockRelationship) {
+
+        const blockedText = document.createElement('span');
+        blockedText.textContent =
+            'You have blocked this user, ';
+
+        const showButton = document.createElement('button');
+        showButton.textContent = 'show anyway?';
+
+        showButton.addEventListener('click', () => {
+            content.textContent = msg.content;
+        });
+
+        content.appendChild(blockedText);
+        content.appendChild(showButton);
+
+    } else {
+
         content.textContent = msg.content;
-      });
-    });
-    content.appendChild(blockedText);
-    content.appendChild(showButton);
-  } else {
-    content.textContent = msg.content;
-  }
-  
-  const timestamp = document.createElement('span');
-  timestamp.className = 'message-time';
-  const sentAt = new Date(msg.created_at);
-  timestamp.textContent = sentAt.toLocaleTimeString([], {
-      hour: 'numeric',
-      minute: '2-digit'
-});
 
-  div.appendChild(profileLink);
-  div.appendChild(meta);
-  div.appendChild(content);
-  div.appendChild(timestamp);
+    }
 
-  if (currentUserId === MOD_UID) {
-    const deleteButton = document.createElement('button');
+    const timestamp = document.createElement('span');
+    timestamp.className = 'message-time';
 
-    deleteButton.textContent = 'Delete';
-    deleteButton.style.backgroundColor = '#ff0000';
+    const sentAt = new Date(msg.created_at);
 
-    deleteButton.addEventListener('click', () => {
-      deleteMessage(msg.id);
+    timestamp.textContent = sentAt.toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit'
     });
 
-    div.appendChild(deleteButton);
-  }
+    div.appendChild(profileLink);
+    div.appendChild(meta);
+    div.appendChild(content);
+    div.appendChild(timestamp);
 
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
+    if (currentUserId === MOD_UID) {
+
+        const deleteButton = document.createElement('button');
+
+        deleteButton.textContent = 'Delete';
+        deleteButton.style.backgroundColor = '#ff0000';
+
+        deleteButton.addEventListener('click', () => {
+            deleteMessage(msg.id);
+        });
+
+        div.appendChild(deleteButton);
+    }
+
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 async function initializeChatroom() {
