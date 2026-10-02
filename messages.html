@@ -381,7 +381,7 @@ async function getUserProfile(userId) {
   return data;
 }
 
-async function appendMessage(msg) {
+async function appendMessage(msg, targetBox = chatBox, scroll = true) {
     const senderProfile = await getUserProfile(msg.sender_id);
 
     const pfpSrc = senderProfile.avatar_url || 'default-pfp.png';
@@ -474,8 +474,10 @@ async function appendMessage(msg) {
         div.appendChild(deleteButton);
     }
 
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    targetBox.appendChild(div);
+    if (scroll) {
+      targetBox.scrollTop = targetBox.scrollHeight;
+    }
 }
 
 async function initializeChatroom() {
@@ -542,6 +544,8 @@ async function loadMessages() {
 
     if (!user) return;
 
+    chatBox.innerHTML = "Loading conversation...";
+
     const { data: fetchedMessages, error } = await db
         .from('messages')
         .select('*')
@@ -554,23 +558,16 @@ async function loadMessages() {
         return;
     }
 
-    chatBox.innerHTML = "Loading conversation...";
-
     const temporaryBox = document.createElement('div');
-
-    const oldChatBox = window.chatBox;
-    window.chatBox = temporaryBox;
 
     if (fetchedMessages && fetchedMessages.length > 0) {
         for (const msg of fetchedMessages) {
-            await appendMessage(msg, false);
+            await appendMessage(msg, temporaryBox, false);
         }
     }
 
     chatBox.innerHTML = "";
     chatBox.append(...temporaryBox.children);
-
-    window.chatBox = oldChatBox;
 
     chatBox.scrollTop = chatBox.scrollHeight;
 
