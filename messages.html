@@ -189,7 +189,6 @@ for (const membership of dmMemberships) {
   }};
 document.addEventListener("DOMContentLoaded", function() {
     initPage();
-    loadNotifications();
 });
 let lastScrollY = window.scrollY;
 const customHeader = document.querySelector('header');
@@ -248,6 +247,7 @@ if (!roomId) {
   window.location.href = "index.html";
 }
 
+let currentUserId = null;
 const chatBox = document.getElementById('chat-box');
 const messageForm = document.getElementById('message-form');
 const messageInput = document.getElementById('message-input');
@@ -545,7 +545,8 @@ if (heading) {
 }
 
   chatBox.innerHTML = ''; 
-  loadMessages();
+  await loadMessages();
+  await loadNotifications();
   listenForNewMessages();
 }
 
@@ -598,15 +599,16 @@ async function loadMessages() {
         .eq('user_id', user.id)
         .select();
 
-    const { error: notificationReadError } = await db
-        .from('chatroom_notifications')
-        .update({
-            last_read_sequence: newestSequence,
-            up_to_date: true,
-            updated_at: new Date().toISOString()
-        })
-        .eq('chatroom_id', roomId)
-        .eq('user_id', currentUserId);
+    const { data: notificationRow, error: notificationReadError } = await db
+    .from('chatroom_notifications')
+    .update({
+        last_read_sequence: newestSequence,
+        up_to_date: true,
+        updated_at: new Date().toISOString()
+    })
+    .eq('chatroom_id', roomId)
+    .eq('user_id', currentUserId)
+    .select();
 
     if (notificationReadError) {
         console.error(
