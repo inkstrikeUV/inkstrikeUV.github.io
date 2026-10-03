@@ -501,6 +501,16 @@ async function initializeChatroom() {
     .eq('id', roomId)
     .single();
 
+    if (room.closed) {
+      messageInput.disabled = true;
+      messageForm.querySelector('button[type="submit"]').disabled = true;
+  
+      const notice = document.createElement('p');
+      notice.textContent = 'This chatroom has been closed.';
+      notice.className = 'closed-chatroom-notice';
+     messageForm.before(notice);
+    }
+
   if (error || !room) {
       alert("Access Denied: You do not have permission to view this chatroom.");
       window.location.href = "index.html"; 
