@@ -247,18 +247,17 @@ async function loadFriendsForChatroom() {
 
         label.style.display = "block";
         label.style.margin = "8px 0";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "chatroom-friend";
+        checkbox.value = friendId;
+        label.appendChild(checkbox);
+        label.appendChild(
+            document.createTextNode(` ${friendName}`)
+);
 
-        label.innerHTML = `
-            <input
-                type="checkbox"
-                class="chatroom-friend"
-                value="${friendId}"
-            >
-            ${friendName}
-        `;
-
-        friendList.appendChild(label);
-    });
+friendList.appendChild(label);
+});
 }
 async function loadPublicRooms() {
 
@@ -288,17 +287,14 @@ async function loadPublicRooms() {
     rooms.forEach(room => {
 
         const roomDiv = document.createElement("div");
-
         roomDiv.className = "chatroom-entry";
-
-        roomDiv.innerHTML = `
-            <h3>${room.name}</h3>
-
-            <button onclick="openChatroom('${room.id}')">
-                Enter Chatroom
-            </button>
-        `;
-
+        const roomTitle = document.createElement("h3");
+        roomTitle.textContent = room.name;
+        const enterButton = document.createElement("button");
+        enterButton.textContent = "Enter Chatroom";
+        enterButton.onclick = () => openChatroom(room.id);
+        roomDiv.appendChild(roomTitle);
+        roomDiv.appendChild(enterButton);
         roomList.appendChild(roomDiv);
     });
 }
@@ -358,26 +354,25 @@ async function loadPrivateRooms() {
         const roomDiv = document.createElement("div");
 
         roomDiv.className = "chatroom-entry";
-        let managementButton = "";
-        if (room.creator_id === myId) {
-        managementButton = 
-        `<button onclick="manageChatroom('${room.id}')">
-            Manage Chatroom
-            </button>`;
-        } else {
-            managementButton = 
-            `<button onclick="leaveChatroom('${room.id}')">
-                Leave Chatroom
-                </button>
-                `;
+            const roomTitle = document.createElement("h3");
+            roomTitle.textContent = room.name;
+            const enterButton = document.createElement("button");
+            enterButton.textContent = "Enter Chatroom";
+            enterButton.onclick = () => openChatroom(room.id);
+            roomDiv.appendChild(roomTitle);
+            roomDiv.appendChild(enterButton);
+            if (room.creator_id === myId) {
+                const manageButton = document.createElement("button");
+                manageButton.textContent = "Manage Chatroom";
+                manageButton.onclick = () => manageChatroom(room.id);
+                roomDiv.appendChild(manageButton);
+            } else {
+                const leaveButton = document.createElement("button");
+                leaveButton.textContent = "Leave Chatroom";
+                leaveButton.onclick = () => leaveChatroom(room.id);
+                roomDiv.appendChild(leaveButton);
             }
-            roomDiv.innerHTML = 
-            `<h3>${room.name}</h3>
-            <button onclick="openChatroom('${room.id}')">
-                Enter Chatroom
-                </button>
-                ${managementButton}`;
-                roomList.appendChild(roomDiv);
+            roomList.appendChild(roomDiv);
             });
         }
 async function loadDMs() {
@@ -427,15 +422,16 @@ async function loadDMs() {
 
     for (const dmmembership of dmmemberships) {
         const room = dmmembership.chatrooms;
-        if (!room) return;
+        if (!room) continue;
         const { data: otherMembers, error: memberError } =
-    await supabaser
-        .from("chatroom_allowed_users")
-        .select("user_id")
-        .eq("chatroom_id", room.id);
-
-console.log("ALL MEMBERS:", otherMembers);
-console.log("MEMBER ERROR:", memberError);
+        await supabaser
+            .from("chatroom_allowed_users")
+            .select("user_id")
+            .eq("chatroom_id", room.id);
+        if (memberError) {
+            console.error("Could not load DM members:", memberError);
+            continue;
+        }
 
 const otherUser = otherMembers?.find(
     member => member.user_id !== myId
@@ -455,14 +451,20 @@ if (otherUser) {
         friendname = profile.username;
     }
 }
+
 const roomDiv = document.createElement("div");
 roomDiv.className = "chatroom-entry";
-roomDiv.innerHTML = `
-    <h3>${friendname}</h3>
-    <button onclick="openChatroom('${room.id}')">
-        Enter DM
-    </button>`;
-        roomList.appendChild(roomDiv);
+
+const roomTitle = document.createElement("h3");
+roomTitle.textContent = friendname;
+
+const enterButton = document.createElement("button");
+enterButton.textContent = "Enter Chatroom";
+enterButton.onclick = () => openChatroom(room.id);
+
+roomDiv.appendChild(roomTitle);
+roomDiv.appendChild(enterButton);
+roomList.appendChild(roomDiv);
 }};
 
 async function leaveChatroom(roomId) {
@@ -519,47 +521,66 @@ async function editChatroom(roomId) {
     }
 
     const content = document.getElementById("chat-content");
+    content.innerHTML = "";
 
-    content.innerHTML = `
-        <h1>Edit Chatroom</h1>
+    const heading = document.createElement("h1");
+    heading.textContent = "Edit Chatroom";
 
-        <label>
-            Chatroom name:
-            <input
-                id="edit-room-name"
-                type="text"
-                maxlength="50"
-                value="${room.name.replace(/"/g, '&quot;')}"
-            >
-        </label>
+    const nameLabel = document.createElement("label");
+    nameLabel.textContent = "Chatroom name: ";
 
-        <br><br>
+    const nameInput = document.createElement("input");
+    nameInput.id = "edit-room-name";
+    nameInput.type = "text";
+    nameInput.maxLength = 50;
+    nameInput.value = room.name;
 
-        <label>
-            Privacy:
-            <select id="edit-room-privacy">
-                <option value="public"
-                    ${room.privacy_type === "public" ? "selected" : ""}>
-                    Public
-                </option>
+    nameLabel.appendChild(nameInput);
 
-                <option value="private"
-                    ${room.privacy_type === "private" ? "selected" : ""}>
-                    Private
-                </option>
-            </select>
-        </label>
+    const breakOne = document.createElement("br");
+    const breakTwo = document.createElement("br");
 
-        <br><br>
+    const privacyLabel = document.createElement("label");
+    privacyLabel.textContent = "Privacy: ";
 
-        <button onclick="saveChatroomEdits('${room.id}')">
-            Save Changes
-        </button>
+    const privacySelect = document.createElement("select");
+    privacySelect.id = "edit-room-privacy";
 
-        <button onclick="manageChatroom('${room.id}')">
-            Cancel
-        </button>
-    `;
+    const publicOption = document.createElement("option");
+    publicOption.value = "public";
+    publicOption.textContent = "Public";
+
+    const privateOption = document.createElement("option");
+    privateOption.value = "private";
+    privateOption.textContent = "Private";
+
+    privacySelect.appendChild(publicOption);
+    privacySelect.appendChild(privateOption);
+
+    privacySelect.value = room.privacy_type;
+
+    privacyLabel.appendChild(privacySelect);
+
+    const breakThree = document.createElement("br");
+    const breakFour = document.createElement("br");
+
+    const saveButton = document.createElement("button");
+    saveButton.textContent = "Save Changes";
+    saveButton.onclick = () => saveChatroomEdits(room.id);
+
+    const cancelButton = document.createElement("button");
+    cancelButton.textContent = "Cancel";
+    cancelButton.onclick = () => manageChatroom(room.id);
+
+    content.appendChild(heading);
+    content.appendChild(nameLabel);
+    content.appendChild(breakOne);
+    content.appendChild(breakTwo);
+    content.appendChild(privacyLabel);
+    content.appendChild(breakThree);
+    content.appendChild(breakFour);
+    content.appendChild(saveButton);
+    content.appendChild(cancelButton);
 }
 
 async function saveChatroomEdits(roomId) {
@@ -665,7 +686,8 @@ async function showMemberManagement(room) {
 
     content.innerHTML = `
         <h1>Manage Members</h1>
-        <h2>${room.name}</h2>
+
+        <div id="member-room-name"></div>
 
         <div id="current-members">
             Loading members...
@@ -673,14 +695,25 @@ async function showMemberManagement(room) {
 
         <br>
 
-        <button onclick="addChatroomMember('${room.id}')">
+        <button id="add-member-button">
             Add Member
         </button>
 
-        <button onclick="manageChatroom('${room.id}')">
+        <button id="back-members-button">
             Back
         </button>
     `;
+
+    const roomName = document.getElementById("member-room-name");
+    roomName.textContent = room.name;
+
+    document.getElementById("add-member-button").onclick = () => {
+        addChatroomMember(room.id);
+    };
+
+    document.getElementById("back-members-button").onclick = () => {
+        manageChatroom(room.id);
+    };
 
     await loadChatroomMembers(room);
 }
@@ -735,25 +768,25 @@ async function loadChatroomMembers(room) {
 
         if (member.user_id === room.creator_id) {
 
-            memberDiv.innerHTML = `
-                <strong>${username}</strong>
-                <span> (Owner)</span>
-            `;
+            const usernameElement = document.createElement("strong");
+            usernameElement.textContent = username;
+            const ownerText = document.createElement("span");
+            ownerText.textContent = " (Owner)";
+            memberDiv.appendChild(usernameElement);
+            memberDiv.appendChild(ownerText);
 
         } else {
 
-            memberDiv.innerHTML = `
-                <strong>${username}</strong>
-
-                <button
-                    onclick="removeChatroomMember(
-                        '${room.id}',
-                        '${member.user_id}'
-                    )"
-                >
-                    Remove
-                </button>
-            `;
+            const usernameElement = document.createElement("strong");
+            usernameElement.textContent = username;
+            const removeButton = document.createElement("button");
+            removeButton.textContent = "Remove";
+            removeButton.onclick = () => {
+                removeChatroomMember(room.id, member.user_id);
+            };
+            memberDiv.appendChild(usernameElement);
+            memberDiv.appendChild(document.createTextNode(" "));
+            memberDiv.appendChild(removeButton);
         }
 
         memberList.appendChild(memberDiv);
@@ -824,7 +857,7 @@ async function addChatroomMember(roomId) {
     const { data: room, error: roomError } =
         await supabaser
             .from("chatrooms")
-            .select("id, creator_id")
+            .select("id, name, creator_id, privacy_type")
             .eq("id", roomId)
             .single();
 
@@ -931,12 +964,7 @@ async function addChatroomMember(roomId) {
 
     alert(`${friend.username} was added to the chatroom.`);
 
-    await showMemberManagement({
-        id: roomId,
-        name: "Chatroom",
-        creator_id: room.creator_id,
-        privacy_type: "private"
-    });
+    await showMemberManagement(room);
 }
 
 function openChatroom(roomId) {
@@ -979,69 +1007,57 @@ function showChatroomManagement(room) {
     content.innerHTML = `
         <h1>Manage Chatroom</h1>
 
-        <h2>${room.name}</h2>
+        <div id="management-room-name"></div>
 
-        <button onclick="openChatroom('${room.id}')">
+        <button id="open-chatroom-button">
             Open Chatroom
         </button>
 
         <br><br>
 
-        <button onclick="editChatroom('${room.id}')">
+        <button id="edit-chatroom-button">
             Edit Chatroom
         </button>
 
-        <button onclick="manageMembers('${room.id}')">
+        <button id="manage-members-button">
             Manage Members
         </button>
 
         <br><br>
 
-        <button onclick="closeChatroom('${room.id}')">
+        <button id="close-chatroom-button">
             Close Chatroom
         </button>
 
         <br><br>
 
-        <button onclick="showTab('private')">
+        <button id="back-private-button">
             Back
         </button>
     `;
-}
-function showChatroomManagement(room) {
-    const content = document.getElementById("chat-content");
 
-    content.innerHTML = `
-        <h1>Manage Chatroom</h1>
+    const roomName = document.getElementById("management-room-name");
+    roomName.textContent = room.name;
 
-        <h2>${room.name}</h2>
+    document.getElementById("open-chatroom-button").onclick = () => {
+        openChatroom(room.id);
+    };
 
-        <button onclick="openChatroom('${room.id}')">
-            Open Chatroom
-        </button>
+    document.getElementById("edit-chatroom-button").onclick = () => {
+        editChatroom(room.id);
+    };
 
-        <br><br>
+    document.getElementById("manage-members-button").onclick = () => {
+        manageMembers(room.id);
+    };
 
-        <button onclick="editChatroom('${room.id}')">
-            Edit Chatroom
-        </button>
+    document.getElementById("close-chatroom-button").onclick = () => {
+        closeChatroom(room.id);
+    };
 
-        <button onclick="manageMembers('${room.id}')">
-            Manage Members
-        </button>
-
-        <br><br>
-
-        <button onclick="closeChatroom('${room.id}')">
-            Close Chatroom
-        </button>
-
-        <br><br>
-
-        <button onclick="showTab('private')">
-            Back
-        </button>
-    `;
+    document.getElementById("back-private-button").onclick = () => {
+        showTab("private");
+    };
 }
 async function closeChatroom(roomId) {
     const { data: { session } } =
