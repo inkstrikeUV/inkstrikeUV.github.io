@@ -287,7 +287,7 @@ async function loadPublicRooms() {
 
     const { data: rooms, error } = await supabaser
         .from("chatrooms")
-        .select("id, name, creator_id")
+        .select("id, name, creator_id, closed")
         .eq("privacy_type", "public")
         .order("name", { ascending: true });
 
@@ -344,7 +344,8 @@ async function loadPrivateRooms() {
                 chatrooms (
                     id,
                     name,
-                    creator_id
+                    creator_id,
+                    closed
                 )
             `)
             .eq("user_id", myId);
@@ -1004,7 +1005,7 @@ async function manageChatroom(roomId) {
 
     const { data: room, error } = await supabaser
         .from("chatrooms")
-        .select("id, name, creator_id, privacy_type")
+        .select("id, name, creator_id, privacy_type, closed")
         .eq("id", roomId)
         .single();
 
@@ -1045,9 +1046,6 @@ function showChatroomManagement(room) {
 
         <br><br>
 
-        <button onclick="toggleChatroomClosed('${room.id}', ${room.closed})">
-            ${room.closed ? 'Reopen Chatroom' : 'Close Chatroom'}
-        </button>
 
         <br><br>
 
@@ -1080,8 +1078,6 @@ function showChatroomManagement(room) {
     };
 }
 async function toggleChatroomClosed(roomId, currentlyClosed) {
-    const action = currentlyClosed ? "reopen" : "close";
-
     const confirmed = confirm(
         currentlyClosed
             ? "Reopen this chatroom?"
@@ -1101,7 +1097,7 @@ async function toggleChatroomClosed(roomId, currentlyClosed) {
         return;
     }
 
-    await loadChatrooms();
+    showTab("private");
 }
 
 async function createChatroom() {
