@@ -1045,8 +1045,8 @@ function showChatroomManagement(room) {
 
         <br><br>
 
-        <button id="close-chatroom-button">
-            Close Chatroom
+        <button onclick="toggleChatroomClosed('${room.id}', ${room.closed})">
+            ${room.closed ? 'Reopen Chatroom' : 'Close Chatroom'}
         </button>
 
         <br><br>
@@ -1072,68 +1072,36 @@ function showChatroomManagement(room) {
     };
 
     document.getElementById("close-chatroom-button").onclick = () => {
-        closeChatroom(room.id);
+        toggleChatroomClosed(roomId, currentlyClosed);
     };
 
     document.getElementById("back-private-button").onclick = () => {
         showTab("private");
     };
 }
-async function closeChatroom(roomId) {
-    const { data: { session } } =
-        await supabaser.auth.getSession();
+async function toggleChatroomClosed(roomId, currentlyClosed) {
+    const action = currentlyClosed ? "reopen" : "close";
 
-    if (!session) {
-        alert("Please log in first!");
-        return;
-    }
+    const confirmed = confirm(
+        currentlyClosed
+            ? "Reopen this chatroom?"
+            : "Close this chatroom?"
+    );
 
-    if (!confirm(
-        "Are you sure you want to close this chatroom? " +
-        "People will no longer be able to send messages."
-    )) {
-        return;
-    }
-
-    const { data: room, error: roomError } =
-        await supabaser
-            .from("chatrooms")
-            .select("creator_id, closed")
-            .eq("id", roomId)
-            .single();
-
-    if (roomError || !room) {
-        console.error("Could not find chatroom:", roomError);
-        alert("Could not find chatroom.");
-        return;
-    }
-
-    if (room.creator_id !== session.user.id) {
-        alert("You aren't the owner of this chatroom.");
-        return;
-    }
-
-    if (room.closed) {
-        alert("This chatroom is already closed.");
-        return;
-    }
+    if (!confirmed) return;
 
     const { error } = await supabaser
         .from("chatrooms")
-        .update({
-            closed: true
-        })
+        .update({ closed: !currentlyClosed })
         .eq("id", roomId);
 
     if (error) {
-        console.error("Could not close chatroom:", error);
-        alert("Could not close chatroom: " + error.message);
+        console.error("Could not update chatroom:", error);
+        alert("Could not update the chatroom: " + error.message);
         return;
     }
 
-    alert("Chatroom closed.");
-
-    showTab("private");
+    await loadChatrooms();
 }
 
 async function createChatroom() {
