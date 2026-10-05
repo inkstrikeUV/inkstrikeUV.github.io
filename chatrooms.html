@@ -44,105 +44,125 @@ const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
 const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function showTab(tab) {
-
     const content = document.getElementById("chat-content");
 
     if (tab === "public") {
+        content.innerHTML = "";
 
-        content.innerHTML = `
-            <h1>Public Chatrooms</h1>
+        const heading = document.createElement("h1");
+        heading.textContent = "Public Chatrooms";
 
-            <div id="public-rooms">
-                Loading...
-            </div>
-        `;
+        const roomList = document.createElement("div");
+        roomList.id = "public-rooms";
+        roomList.textContent = "Loading...";
+
+        content.appendChild(heading);
+        content.appendChild(roomList);
 
         loadPublicRooms();
-
     }
-
 
     else if (tab === "private") {
+        content.innerHTML = "";
 
-        content.innerHTML = `
-            <h1>Private Chatrooms</h1>
+        const heading = document.createElement("h1");
+        heading.textContent = "Private Chatrooms";
 
-            <div id="private-rooms">
-                Loading...
-            </div>
-        `;
+        const roomList = document.createElement("div");
+        roomList.id = "private-rooms";
+        roomList.textContent = "Loading...";
+
+        content.appendChild(heading);
+        content.appendChild(roomList);
 
         loadPrivateRooms();
-
     }
-
 
     else if (tab === "dms") {
+        content.innerHTML = "";
 
-        content.innerHTML = `
-            <h1>Direct Messages</h1>
+        const heading = document.createElement("h1");
+        heading.textContent = "Direct Messages";
 
-            <div id="dm-rooms">
-                Loading...
-            </div>
-        `;
+        const roomList = document.createElement("div");
+        roomList.id = "dm-rooms";
+        roomList.textContent = "Loading...";
+
+        content.appendChild(heading);
+        content.appendChild(roomList);
 
         loadDMs();
-
     }
-
 
     else if (tab === "create") {
+        content.innerHTML = "";
 
-        content.innerHTML = `
-            <h1>Make a Chatroom</h1>
+        const heading = document.createElement("h1");
+        heading.textContent = "Make a Chatroom";
 
-            <label>
-                Chatroom name:
-                <input
-                    id="room-name"
-                    type="text"
-                    maxlength="50"
-                    placeholder="My cool chatroom"
-                >
-            </label>
+        const nameLabel = document.createElement("label");
+        nameLabel.textContent = "Chatroom name: ";
 
-            <br><br>
+        const nameInput = document.createElement("input");
+        nameInput.id = "room-name";
+        nameInput.type = "text";
+        nameInput.maxLength = 50;
+        nameInput.placeholder = "My cool chatroom";
 
-            <label>
-                <input
-                    type="radio"
-                    name="privacy"
-                    value="public"
-                    checked
-                    onchange="updatePrivacyOptions()"
-                >
-                Public
-            </label>
+        nameLabel.appendChild(nameInput);
 
-            <br>
+        const breakOne = document.createElement("br");
+        const breakTwo = document.createElement("br");
 
-            <label>
-                <input
-                    type="radio"
-                    name="privacy"
-                    value="private"
-                    onchange="updatePrivacyOptions()"
-                >
-                Private
-            </label>
+        const publicLabel = document.createElement("label");
 
-            <div id="private-options"></div>
+        const publicRadio = document.createElement("input");
+        publicRadio.type = "radio";
+        publicRadio.name = "privacy";
+        publicRadio.value = "public";
+        publicRadio.checked = true;
+        publicRadio.onchange = updatePrivacyOptions;
 
-            <br>
+        publicLabel.appendChild(publicRadio);
+        publicLabel.appendChild(
+            document.createTextNode(" Public")
+        );
 
-            <button onclick="createChatroom()">
-                Create Chatroom
-            </button>
-        `;
+        const breakThree = document.createElement("br");
 
+        const privateLabel = document.createElement("label");
+
+        const privateRadio = document.createElement("input");
+        privateRadio.type = "radio";
+        privateRadio.name = "privacy";
+        privateRadio.value = "private";
+        privateRadio.onchange = updatePrivacyOptions;
+
+        privateLabel.appendChild(privateRadio);
+        privateLabel.appendChild(
+            document.createTextNode(" Private")
+        );
+
+        const privateOptions = document.createElement("div");
+        privateOptions.id = "private-options";
+
+        const breakFour = document.createElement("br");
+
+        const createButton = document.createElement("button");
+        createButton.textContent = "Create Chatroom";
+        createButton.onclick = createChatroom;
+
+        content.appendChild(heading);
+        content.appendChild(nameLabel);
+        content.appendChild(breakOne);
+        content.appendChild(breakTwo);
+        content.appendChild(publicLabel);
+        content.appendChild(breakThree);
+        content.appendChild(privateLabel);
+        content.appendChild(privateOptions);
+        content.appendChild(breakFour);
+        content.appendChild(createButton);
     }
-
 }
 
 function updatePrivacyOptions() {
