@@ -1030,6 +1030,8 @@ function showChatroomManagement(room) {
 
         <div id="management-room-name"></div>
 
+        <br>
+
         <button id="open-chatroom-button">
             Open Chatroom
         </button>
@@ -1046,6 +1048,9 @@ function showChatroomManagement(room) {
 
         <br><br>
 
+        <button id="toggle-chatroom-button">
+            ${room.closed ? "Reopen Chatroom" : "Close Chatroom"}
+        </button>
 
         <br><br>
 
@@ -1054,7 +1059,9 @@ function showChatroomManagement(room) {
         </button>
     `;
 
-    const roomName = document.getElementById("management-room-name");
+    const roomName =
+        document.getElementById("management-room-name");
+
     roomName.textContent = room.name;
 
     document.getElementById("open-chatroom-button").onclick = () => {
@@ -1069,8 +1076,8 @@ function showChatroomManagement(room) {
         manageMembers(room.id);
     };
 
-    document.getElementById("close-chatroom-button").onclick = () => {
-        toggleChatroomClosed(roomId, currentlyClosed);
+    document.getElementById("toggle-chatroom-button").onclick = () => {
+        toggleChatroomClosed(room.id, room.closed);
     };
 
     document.getElementById("back-private-button").onclick = () => {
