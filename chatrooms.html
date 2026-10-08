@@ -1085,6 +1085,15 @@ function showChatroomManagement(room) {
     };
 }
 async function toggleChatroomClosed(roomId, currentlyClosed) {
+
+    const { data: { session } } =
+        await supabaser.auth.getSession();
+
+    if (!session) {
+        alert("Please log in first!");
+        return;
+    }
+
     const confirmed = confirm(
         currentlyClosed
             ? "Reopen this chatroom?"
@@ -1093,9 +1102,29 @@ async function toggleChatroomClosed(roomId, currentlyClosed) {
 
     if (!confirmed) return;
 
+    const { data: room, error: roomError } =
+        await supabaser
+            .from("chatrooms")
+            .select("id, creator_id, closed")
+            .eq("id", roomId)
+            .single();
+
+    if (roomError || !room) {
+        console.error("Could not find chatroom:", roomError);
+        alert("Could not find the chatroom.");
+        return;
+    }
+
+    if (room.creator_id !== session.user.id) {
+        alert("Only the owner can open or close this chatroom.");
+        return;
+    }
+
     const { error } = await supabaser
         .from("chatrooms")
-        .update({ closed: !currentlyClosed })
+        .update({
+            closed: !currentlyClosed
+        })
         .eq("id", roomId);
 
     if (error) {
@@ -1104,7 +1133,7 @@ async function toggleChatroomClosed(roomId, currentlyClosed) {
         return;
     }
 
-    showTab("private");
+    await manageChatroom(roomId);
 }
 
 async function createChatroom() {
