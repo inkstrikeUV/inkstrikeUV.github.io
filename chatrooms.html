@@ -20,6 +20,9 @@
         <button onclick="showTab('private')">
             Private
         </button>
+        <button onclick="showTab('archives')">
+            Archives
+        </button>
 
         <button onclick="showTab('dms')">
             DMs
@@ -93,6 +96,22 @@ function showTab(tab) {
 
         loadDMs();
     }
+    else if (tab === "archives") {
+        content.innerHTML = "";
+        
+        const heading = document.createElement("h1");
+        heading.textContent = "Archived Chatrooms";
+
+        const roomList = document.createElement("div");
+        roomList.id = "archived-rooms";
+        roomList.textContent = "Loading archives...";
+
+        content.appendChild(heading);
+        content.appendChild(roomList);
+
+        loadArchivedRooms();
+    }
+
 
     else if (tab === "create") {
         content.innerHTML = "";
@@ -1033,7 +1052,7 @@ function showChatroomManagement(room) {
         <br>
 
         <button id="open-chatroom-button">
-            Open Chatroom
+            Enter Chatroom
         </button>
 
         <br><br>
@@ -1134,6 +1153,87 @@ async function toggleChatroomClosed(roomId, currentlyClosed) {
     }
 
     await manageChatroom(roomId);
+}
+
+async function loadArchivedRooms() {
+    const roomList = document.getElementById("archived-rooms");
+    if (!roomList) return;
+
+    const { data: { session } } = await supabaser.auth.getSession();
+
+    if (!session) {
+        roomList.textContent = "Please log in first.";
+        return;
+    }
+
+    const myId = session.user.id;
+
+    // Public archives are visible to everyone.
+    const { data: publicRooms, error: publicError } = await supabaser
+        .from("chatrooms")
+        .select("id, name, creator_id, privacy_type, closed")
+        .eq("privacy_type", "public")
+        .eq("closed", true)
+        .order("name");
+
+    if (publicError) {
+        console.error("Could not load public archives:", publicError);
+        roomList.textContent = "Could not load archives.";
+        return;
+    }
+
+    // Private archives are visible only to their owner.
+    const { data: privateRooms, error: privateError } = await supabaser
+        .from("chatrooms")
+        .select("id, name, creator_id, privacy_type, closed")
+        .eq("privacy_type", "private")
+        .eq("closed", true)
+        .eq("creator_id", myId)
+        .order("name");
+
+    if (privateError) {
+        console.error("Could not load private archives:", privateError);
+        roomList.textContent = "Could not load archives.";
+        return;
+    }
+
+    const rooms = [...(publicRooms || []), ...(privateRooms || [])];
+
+    roomList.innerHTML = "";
+
+    if (rooms.length === 0) {
+        roomList.textContent = "There are no archived chatrooms.";
+        return;
+    }
+
+    rooms.forEach(room => {
+        const roomDiv = document.createElement("div");
+        roomDiv.className = "chatroom-entry";
+
+        const title = document.createElement("h3");
+        title.textContent = room.name + " (Closed)";
+
+        roomDiv.appendChild(title);
+
+        const enterButton = document.createElement("button");
+        enterButton.textContent = "View Chatroom";
+        enterButton.onclick = () => openChatroom(room.id);
+        roomDiv.appendChild(enterButton);
+
+        if (room.creator_id === myId) {
+            const reopenButton = document.createElement("button");
+            reopenButton.textContent = "Reopen Chatroom";
+            reopenButton.onclick = () => toggleChatroomClosed(room.id, true);
+            roomDiv.appendChild(reopenButton);
+
+            const manageButton = document.createElement("button");
+            manageButton.textContent = "Manage Chatroom";
+            manageButton.onclick = () => manageChatroom(room.id);
+            roomDiv.appendChild(manageButton);
+        }
+
+        roomList.appendChild(roomDiv);
+    });
 }
 
 async function createChatroom() {
