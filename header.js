@@ -39,9 +39,11 @@
       target.innerHTML = await response.text();
 
       target.querySelectorAll("[data-route]").forEach((link) => {
-        const route = link.dataset.route;
-        link.href = new URL(route, baseUrl).href;
-      });
+          link.href = new URL(link.dataset.route, baseUrl).href;
+        });
+        target.querySelectorAll("[data-route-src]").forEach((img) => {
+            img.src = new URL(img.dataset.routeSrc, baseUrl).href;
+        });
 
       document.dispatchEvent(new CustomEvent("shared-header-loaded"));
     } catch (error) {

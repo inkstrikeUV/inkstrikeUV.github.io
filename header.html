@@ -1,31 +1,52 @@
-
+```html
 <header class="site-header">
-  <a class="site-header__logo" data-route="index.html" href="#">
-    <span class="site-header__logo-icon">💜</span>
-    <span>Your Website</span>
-  </a>
+  <div class="header-left">
+    <div id="loginlink">
+      <a href="#" data-route="loginpage.html" style="color:#300385">
+        sign in
+      </a>
+    </div>
 
-  <nav class="site-header__nav" aria-label="Main navigation">
-    <a class="site-header__link" data-route="index.html" href="#">
-      Home
-    </a>
-    <a class="site-header__link" data-route="chatrooms.html" href="#">
-      Chatrooms
-    </a>
-    <a class="site-header__link" data-route="notifications.html" href="#">
-      Notifications
-      <span
-        class="site-header__badge"
-        id="header-notification-badge"
-        hidden
-      ></span>
-    </a>
-  </nav>
+    <div id="accountlink" style="display: none;">
+      <a href="#" data-route="profile.html" style="color:#300385">
+        <span id="username-display">Loading...</span>
+      </a>
+    </div>
 
-  <div class="site-header__account">
-    <span id="header-money" class="site-header__money"></span>
-    <a class="site-header__link" data-route="login.html" href="#">
-      Account
-    </a>
+    <div class="money-container">
+      Money: <span id="money-display">Loading...</span>
+    </div>
+  </div>
+
+  <div class="header-center">
+    <img
+      data-route-src="ezgif-6dbe54e04356ef45.gif"
+      height="50"
+      alt="Site logo"
+    >
+  </div>
+
+  <div class="header-right">
+    <div class="notification-wrapper">
+      <a href="#" data-route="index.html">
+        <img
+          data-route-src="hoamcolonthree.png"
+          height="50"
+          width="50"
+          alt="Home"
+        >
+      </a>
+
+      <a href="#" data-route="notifications.html">
+        <img
+          data-route-src="bell.png"
+          height="50"
+          width="50"
+          alt="Notifications"
+          id="notifbell"
+        >
+      </a>
+    </div>
   </div>
 </header>
+```
