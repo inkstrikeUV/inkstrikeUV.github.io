@@ -299,41 +299,45 @@ friendList.appendChild(label);
 });
 }
 async function loadPublicRooms() {
-
     const roomList = document.getElementById("public-rooms");
-
     if (!roomList) return;
-
+    const { data: { session } } = await supabaser.auth.getSession();
+    if (!session) {
+        roomList.innerHTML = "<p>Please log in first.</p>";
+        return;
+    }
     const { data: rooms, error } = await supabaser
         .from("chatrooms")
         .select("id, name, creator_id, closed")
         .eq("privacy_type", "public")
+        .eq("closed", false)
         .order("name", { ascending: true });
-
     if (error) {
         console.error("Could not load public chatrooms:", error);
         roomList.innerHTML = "<p>Could not load public chatrooms.</p>";
         return;
     }
-
+    roomList.innerHTML = "";
     if (!rooms || rooms.length === 0) {
         roomList.innerHTML = "<p>There aren't any public chatrooms yet!</p>";
         return;
     }
-
-    roomList.innerHTML = "";
-
     rooms.forEach(room => {
-
         const roomDiv = document.createElement("div");
         roomDiv.className = "chatroom-entry";
         const roomTitle = document.createElement("h3");
         roomTitle.textContent = room.name;
+        roomDiv.appendChild(roomTitle);
         const enterButton = document.createElement("button");
         enterButton.textContent = "Enter Chatroom";
         enterButton.onclick = () => openChatroom(room.id);
-        roomDiv.appendChild(roomTitle);
         roomDiv.appendChild(enterButton);
+        if (room.creator_id === session.user.id) {
+            const manageButton = document.createElement("button");
+            manageButton.textContent = "Manage Chatroom";
+            manageButton.onclick = () => manageChatroom(room.id);
+            roomDiv.appendChild(manageButton);
+        }
         roomList.appendChild(roomDiv);
     });
 }
@@ -1172,7 +1176,6 @@ async function loadArchivedRooms() {
 
     const myId = session.user.id;
 
-    // Public archives are visible to everyone.
     const { data: publicRooms, error: publicError } = await supabaser
         .from("chatrooms")
         .select("id, name, creator_id, privacy_type, closed")
@@ -1186,7 +1189,6 @@ async function loadArchivedRooms() {
         return;
     }
 
-    // Private archives are visible only to their owner.
     const { data: privateRooms, error: privateError } = await supabaser
         .from("chatrooms")
         .select("id, name, creator_id, privacy_type, closed")
@@ -1202,7 +1204,6 @@ async function loadArchivedRooms() {
     }
 
     const rooms = [...(publicRooms || []), ...(privateRooms || [])];
-
     roomList.innerHTML = "";
 
     if (rooms.length === 0) {
@@ -1210,30 +1211,13 @@ async function loadArchivedRooms() {
         return;
     }
 
-    for (const room of rooms) {
+    rooms.forEach(room => {
         const roomDiv = document.createElement("div");
         roomDiv.className = "chatroom-entry";
 
         const title = document.createElement("h3");
-        title.textContent = room.name;
-
+        title.textContent = room.name + " (Closed)";
         roomDiv.appendChild(title);
-        
-        const enterButton = document.createElement("button");
-        enterButton.textContent = "Enter Chatroom";
-        enterButton.onclick = () => openChatroom(room.id);
-        roomDiv.appendChild(roomTitle);
-        roomDiv.appendChild(enterButton);
-        
-        const { data: { session } } = await supabaser.auth.getSession();
-        if (session && room.creator_id === session.user.id) {
-            const manageButton = document.createElement("button");
-            manageButton.textContent = "Manage Chatroom";
-            manageButton.onclick = () => manageChatroom(room.id);
-            roomDiv.appendChild(manageButton);
-        }
-        roomList.appendChild(roomDiv);
-
         if (room.creator_id === myId) {
             const reopenButton = document.createElement("button");
             reopenButton.textContent = "Reopen Chatroom";
@@ -1244,10 +1228,15 @@ async function loadArchivedRooms() {
             manageButton.textContent = "Manage Chatroom";
             manageButton.onclick = () => manageChatroom(room.id);
             roomDiv.appendChild(manageButton);
+        } else {
+            const viewButton = document.createElement("button");
+            viewButton.textContent = "View Chatroom";
+            viewButton.onclick = () => openChatroom(room.id);
+            roomDiv.appendChild(viewButton);
         }
 
         roomList.appendChild(roomDiv);
-}
+    });
 }
 
 async function createChatroom() {
