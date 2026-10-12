@@ -108,3 +108,11 @@ header a:hover {
 .site-header {
     font-size: xx-large;
 }
+.site-header .money-container {
+    font-size: xx-large !important;
+}
+
+.site-header #money-display {
+    font-size: inherit !important;
+    font-weight: bold;
+}
