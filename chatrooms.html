@@ -1210,19 +1210,29 @@ async function loadArchivedRooms() {
         return;
     }
 
-    rooms.forEach(room => {
+    for (const room of rooms) {
         const roomDiv = document.createElement("div");
         roomDiv.className = "chatroom-entry";
 
         const title = document.createElement("h3");
-        title.textContent = room.name + " (Closed)";
+        title.textContent = room.name;
 
         roomDiv.appendChild(title);
-
+        
         const enterButton = document.createElement("button");
-        enterButton.textContent = "View Chatroom";
+        enterButton.textContent = "Enter Chatroom";
         enterButton.onclick = () => openChatroom(room.id);
+        roomDiv.appendChild(roomTitle);
         roomDiv.appendChild(enterButton);
+        
+        const { data: { session } } = await supabaser.auth.getSession();
+        if (session && room.creator_id === session.user.id) {
+            const manageButton = document.createElement("button");
+            manageButton.textContent = "Manage Chatroom";
+            manageButton.onclick = () => manageChatroom(room.id);
+            roomDiv.appendChild(manageButton);
+        }
+        roomList.appendChild(roomDiv);
 
         if (room.creator_id === myId) {
             const reopenButton = document.createElement("button");
@@ -1237,7 +1247,7 @@ async function loadArchivedRooms() {
         }
 
         roomList.appendChild(roomDiv);
-    });
+}
 }
 
 async function createChatroom() {
