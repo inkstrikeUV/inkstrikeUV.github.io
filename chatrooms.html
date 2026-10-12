@@ -376,7 +376,11 @@ async function loadPrivateRooms() {
         return;
     }
     const privmemberships = (memberships || []).filter(
-    membership => membership.chatroom_id.startsWith("chat_"));
+        membership =>
+            membership.chatroom_id.startsWith("chat_") &&
+            membership.chatrooms &&
+            membership.chatrooms.closed === false
+    );
     if (!privmemberships || privmemberships.length === 0) {
         roomList.innerHTML =
             "<p>You aren't in any private chatrooms yet!</p>";
