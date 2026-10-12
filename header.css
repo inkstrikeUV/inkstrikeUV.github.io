@@ -78,7 +78,6 @@ header a:hover {
     transform: scale(0.92);
 }
 
-/* Keep the shared header usable on smaller screens */
 @media (max-width: 600px) {
     header {
         padding: 8px;
@@ -104,4 +103,8 @@ header a:hover {
     .money-container {
         font-size: 0.7rem;
     }
+}
+
+.site-header {
+    font-size: xx-large;
 }
