@@ -22,7 +22,7 @@
 <div id="chat-box">Loading conversation...</div>
   
   <form id="message-form">
-    <input type="text" id="message-input" placeholder="Type your message here..." required style="width: 75%; padding: 8px;">
+    <textarea id="message-input" placeholder="Type your message here..." required rows="1" style="width: 75%; padding: 8px; resize: vertical; font: inherit;"></textarea>
     <button type="submit" style="padding: 8px 15px; background-color: #300385; color: white; border: none; cursor: pointer;">Send</button>
   </form>
 </main>
@@ -558,13 +558,16 @@ async function deleteMessage(messageId) {
 }
 
 
-
-
+messageInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    messageForm.requestSubmit();
+  }
+});
 messageForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = messageInput.value.trim();
   if (text) {
-    messageInput.value = '';
     await sendMessage(text);
   }
 });
