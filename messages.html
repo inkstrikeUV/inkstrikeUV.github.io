@@ -50,20 +50,7 @@ async function initPage() {
             .select('money, username')
             .eq('id', session.user.id)
             .single();
-        if (data) {
-            money = data.money;
-            document.getElementById("money-display").innerText = money;
-            
-            document.getElementById("username-display").innerText = data.username || "User";
-        } else if (error) {
-            console.error("Database error:", error.message);
-            document.getElementById("money-display").innerText = "Error";
-          };
-            
-        } else {
-            window.location.href = "loginpage.html";
-        }
-    }
+    }}
 async function loadNotifications() {
     const { data: { session } } = await db.auth.getSession();
     
@@ -162,20 +149,9 @@ for (const membership of dmMemberships) {
         console.error("Playback failed:", error);
     });
   }};
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("shared-header-account-ready", () => {
     initPage();
-});
-let lastScrollY = window.scrollY;
-const customHeader = document.querySelector('header');
-
-window.addEventListener('scroll', () => {
-    if (window.scrollY > lastScrollY && window.scrollY > 50) {
-        customHeader.classList.add('hidden');
-    } else {
-        customHeader.classList.remove('hidden');
-    }
-    lastScrollY = window.scrollY;
-});
+}, { once: true });
 
 
 function listenForNotificationMessages() {
@@ -465,9 +441,6 @@ async function initializeChatroom() {
   currentUserId = user.id;
   await loadNotificationStatus();
   const myProfile = await getUserProfile(user.id);
-  document.getElementById('loginlink').style.display = 'none';
-  document.getElementById('accountlink').style.display = 'block';
-  document.getElementById('username-display').innerText = myProfile.username;
 
 
   const { data: room, error } = await db
