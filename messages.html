@@ -2,7 +2,7 @@
 <head>
   <title>Messages</title>
   <link rel="stylesheet" href="messagestyle.css">
-  <link rel="icon" type="image/x-icon" href="pixil-frame-0 (1).ico">
+  <link rel="icon" type="image/x-icon" href="icon.ico">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -28,9 +28,7 @@
 </main>
 
 <script>
-const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
-const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 let money = 0;
 
 var link = document.querySelector("link[rel~='icon']");
@@ -646,7 +644,10 @@ messageForm.addEventListener('submit', async (e) => {
   }
 });
 
-initializeChatroom();
+document.addEventListener("shared-header-account-ready", async () => {
+    db = window.sharedSupabase;
+    await initializeChatroom();
+}, { once: true });
 </script>
 
 </body>
