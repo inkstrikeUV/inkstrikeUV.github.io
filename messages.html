@@ -190,27 +190,32 @@ async function loadNotificationStatus() {
 
 
 let blockedUserIds = new Set();
-const profileCache = {};
-
-
+const profileCache = new Map();
 async function getUserProfile(userId) {
- if (profileCache[userId]) return profileCache[userId];
+  if (profileCache.has(userId)) {
+    return profileCache.get(userId);
+  }
 
+  const profilePromise = (async () => {
+    const { data, error } = await db
+      .from('profiles')
+      .select('username, avatar_url, bgcolor')
+      .eq('id', userId)
+      .single();
 
- const { data, error } = await db
-   .from('profiles')
-   .select('username, avatar_url, bgcolor')
-   .eq('id', userId)
-   .single();
+    if (error || !data) {
+      return {
+        username: 'Unknown User',
+        avatar_url: 'default-pfp.png',
+        bgcolor: '#8f54ff'
+      };
+    }
 
+    return data;
+  })();
 
- if (error || !data) {
-   return { username: "Unknown User", avatar_url: "default-pfp.png", bgcolor: "#8f54ff" };
- }
-
-
- profileCache[userId] = data;
- return data;
+  profileCache.set(userId, profilePromise);
+  return profilePromise;
 }
 
 
@@ -338,7 +343,6 @@ async function initializeChatroom() {
  }
  currentUserId = user.id;
  await loadNotificationStatus();
- const myProfile = await getUserProfile(user.id);
 
 
 
@@ -422,7 +426,7 @@ async function loadMessages() {
 
    const { data: fetchedMessages, error } = await db
        .from('messages')
-       .select('*')
+       .select('id, sender_id, content, created_at, sequence_number')
        .eq('chatroom_id', roomId)
        .order('sequence_number', { ascending: true });
 
