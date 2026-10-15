@@ -20,47 +20,54 @@
 </div>
 
 <div id="chat-box">Loading conversation...</div>
-  
   <form id="message-form">
-    <textarea id="message-input" placeholder="Type your message here..." required rows="1" style="width: 75%; padding: 8px; resize: vertical; font: inherit;"></textarea>
-    <button type="submit" style="padding: 8px 15px; background-color: #300385; color: white; border: none; cursor: pointer;">Send</button>
-  </form>
+   <textarea id="message-input" placeholder="Type your message here..." required rows="1" style="width: 75%; padding: 8px; resize: vertical; font: inherit;"></textarea>
+   <button type="submit" style="padding: 8px 15px; background-color: #300385; color: white; border: none; cursor: pointer;">Send</button>
+ </form>
 </main>
 
+
 <script>
+
 
 let money = 0;
 let db = null;
 
+
 var link = document.querySelector("link[rel~='icon']");
 if (!link) {
-    link = document.createElement('link');
-    link.rel = 'icon';
-    document.head.appendChild(link);
+   link = document.createElement('link');
+   link.rel = 'icon';
+   document.head.appendChild(link);
 }
 async function initPage() {
-    const { data: { session } } = await db.auth.getSession();
-    
-    if (session) {
-        document.getElementById('loginlink').style.display = 'none';
-        document.getElementById('accountlink').style.display = 'block';
-        const { data, error } = await db
-            .from('profiles')
-            .select('money, username')
-            .eq('id', session.user.id)
-            .single();
-    }}
+   const { data: { session } } = await db.auth.getSession();
+  
+   if (session) {
+       document.getElementById('loginlink').style.display = 'none';
+       document.getElementById('accountlink').style.display = 'block';
+       const { data, error } = await db
+           .from('profiles')
+           .select('money, username')
+           .eq('id', session.user.id)
+           .single();
+   }}
+
 
 const MOD_UID = "0996c7e8-6e8b-4725-920b-1f1c162259b0";
+
 
 const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get('room');
 
 
+
+
 if (!roomId) {
-  alert("No chatroom specified.");
-  window.location.href = "index.html";
+ alert("No chatroom specified.");
+ window.location.href = "index.html";
 }
+
 
 let currentUserId = null;
 const chatBox = document.getElementById('chat-box');
@@ -68,448 +75,544 @@ const messageForm = document.getElementById('message-form');
 const messageInput = document.getElementById('message-input');
 const notificationToggle = document.getElementById('notification-toggle');
 
+
 if (roomId && roomId.startsWith('dm_')) {
-    notificationToggle.style.display = 'none';
+   notificationToggle.style.display = 'none';
 }
+
+
 
 
 async function toggleNotifications() {
-  if (!currentUserId || !roomId) return;
+ if (!currentUserId || !roomId) return;
 
-  const { data: existing, error: lookupError } = await db
-    .from('chatroom_notifications')
-    .select('enabled')
-    .eq('chatroom_id', roomId)
-    .eq('user_id', currentUserId)
-    .maybeSingle();
 
-  if (lookupError) {
-    console.error('Could not check notification status:', lookupError);
-    return;
-  }
+ const { data: existing, error: lookupError } = await db
+   .from('chatroom_notifications')
+   .select('enabled')
+   .eq('chatroom_id', roomId)
+   .eq('user_id', currentUserId)
+   .maybeSingle();
 
-  if (existing) {
-    const newStatus = !existing.enabled;
 
-    const { error } = await db
-      .from('chatroom_notifications')
-      .update({
-        enabled: newStatus,
-        updated_at: new Date().toISOString()
-      })
-      .eq('chatroom_id', roomId)
-      .eq('user_id', currentUserId);
+ if (lookupError) {
+   console.error('Could not check notification status:', lookupError);
+   return;
+ }
 
-    if (error) {
-      console.error('Could not update notifications:', error);
-      alert('Could not update notification settings.');
-      return;
-    }
 
-    notificationToggle.textContent =
-      newStatus
-        ? 'Disable notifications'
-        : 'Enable notifications';
+ if (existing) {
+   const newStatus = !existing.enabled;
 
-  } else {
-    const { error } = await db
-      .from('chatroom_notifications')
-      .insert({
-        chatroom_id: roomId,
-        user_id: currentUserId,
-        last_read_sequence: 0,
-        up_to_date: true,
-        enabled: true
-      });
 
-    if (error) {
-      console.error('Could not enable notifications:', error);
-      alert('Could not enable notifications.');
-      return;
-    }
+   const { error } = await db
+     .from('chatroom_notifications')
+     .update({
+       enabled: newStatus,
+       updated_at: new Date().toISOString()
+     })
+     .eq('chatroom_id', roomId)
+     .eq('user_id', currentUserId);
 
-    notificationToggle.textContent = 'Disable notifications';
-  }
+
+   if (error) {
+     console.error('Could not update notifications:', error);
+     alert('Could not update notification settings.');
+     return;
+   }
+
+
+   notificationToggle.textContent =
+     newStatus
+       ? 'Disable notifications'
+       : 'Enable notifications';
+
+
+ } else {
+   const { error } = await db
+     .from('chatroom_notifications')
+     .insert({
+       chatroom_id: roomId,
+       user_id: currentUserId,
+       last_read_sequence: 0,
+       up_to_date: true,
+       enabled: true
+     });
+
+
+   if (error) {
+     console.error('Could not enable notifications:', error);
+     alert('Could not enable notifications.');
+     return;
+   }
+
+
+   notificationToggle.textContent = 'Disable notifications';
+ }
 }
+
+
 
 
 notificationToggle.addEventListener('click', toggleNotifications);
 
 
+
+
 async function loadNotificationStatus() {
-  if (!currentUserId || !roomId) return;
+ if (!currentUserId || !roomId) return;
 
-  if (roomId.startsWith('dm_')) {
-    notificationToggle.style.display = 'none';
-    return;
-  }
 
-  const { data, error } = await db
-    .from('chatroom_notifications')
-    .select('enabled')
-    .eq('chatroom_id', roomId)
-    .eq('user_id', currentUserId)
-    .maybeSingle();
+ if (roomId.startsWith('dm_')) {
+   notificationToggle.style.display = 'none';
+   return;
+ }
 
-  if (error) {
-    console.error('Could not load notification status:', error);
-    notificationToggle.textContent = 'Enable notifications';
-    return;
-  }
 
-  notificationToggle.textContent =
-    data?.enabled ? 'Disable notifications' : 'Enable notifications';
+ const { data, error } = await db
+   .from('chatroom_notifications')
+   .select('enabled')
+   .eq('chatroom_id', roomId)
+   .eq('user_id', currentUserId)
+   .maybeSingle();
+
+
+ if (error) {
+   console.error('Could not load notification status:', error);
+   notificationToggle.textContent = 'Enable notifications';
+   return;
+ }
+
+
+ notificationToggle.textContent =
+   data?.enabled ? 'Disable notifications' : 'Enable notifications';
 }
+
 
 let blockedUserIds = new Set();
 const profileCache = {};
 
+
 async function getUserProfile(userId) {
-  if (profileCache[userId]) return profileCache[userId];
+ if (profileCache[userId]) return profileCache[userId];
 
-  const { data, error } = await db
-    .from('profiles')
-    .select('username, avatar_url, bgcolor')
-    .eq('id', userId)
-    .single();
 
-  if (error || !data) {
-    return { username: "Unknown User", avatar_url: "default-pfp.png", bgcolor: "#8f54ff" };
-  }
+ const { data, error } = await db
+   .from('profiles')
+   .select('username, avatar_url, bgcolor')
+   .eq('id', userId)
+   .single();
 
-  profileCache[userId] = data;
-  return data;
+
+ if (error || !data) {
+   return { username: "Unknown User", avatar_url: "default-pfp.png", bgcolor: "#8f54ff" };
+ }
+
+
+ profileCache[userId] = data;
+ return data;
 }
+
 
 async function appendMessage(msg, targetBox = chatBox, scroll = true) {
-    const senderProfile = await getUserProfile(msg.sender_id);
+   const senderProfile = await getUserProfile(msg.sender_id);
 
-    const pfpSrc = senderProfile.avatar_url || 'default-pfp.png';
-    const userColor = senderProfile.bgcolor || '#8f54ff';
 
-    const isBlocked = blockedUserIds.has(msg.sender_id);
+   const pfpSrc = senderProfile.avatar_url || 'default-pfp.png';
+   const userColor = senderProfile.bgcolor || '#8f54ff';
 
-    const div = document.createElement('div');
-    div.className = 'message';
-    div.dataset.messageId = msg.id;
-    div.style.setProperty('--user-color', userColor);
 
-    const profileLink = document.createElement('a');
-    profileLink.href =
-        `profile.html?user=${encodeURIComponent(senderProfile.username)}`;
+   const isBlocked = blockedUserIds.has(msg.sender_id);
 
-    const pfp = document.createElement('img');
-    pfp.className = 'chat-pfp';
-    pfp.src = pfpSrc;
-    pfp.alt = `${senderProfile.username}'s pfp`;
 
-    profileLink.appendChild(pfp);
+   const div = document.createElement('div');
+   div.className = 'message';
+   div.dataset.messageId = msg.id;
+   div.style.setProperty('--user-color', userColor);
 
-    const meta = document.createElement('span');
-    meta.className = 'meta';
-    meta.textContent = `${senderProfile.username}:`;
 
-    const content = document.createElement('span');
-    content.className = 'msg-content';
+   const profileLink = document.createElement('a');
+   profileLink.href =
+       `profile.html?user=${encodeURIComponent(senderProfile.username)}`;
 
-    if (isBlocked) {
 
-        const blockedText = document.createElement('span');
-        blockedText.textContent =
-            'You have blocked this user, ';
+   const pfp = document.createElement('img');
+   pfp.className = 'chat-pfp';
+   pfp.src = pfpSrc;
+   pfp.alt = `${senderProfile.username}'s pfp`;
 
-        const showButton = document.createElement('button');
-        showButton.textContent = 'show anyway?';
 
-        showButton.addEventListener('click', () => {
-            content.textContent = msg.content;
-        });
+   profileLink.appendChild(pfp);
 
-        content.appendChild(blockedText);
-        content.appendChild(showButton);
 
-    } else {
+   const meta = document.createElement('span');
+   meta.className = 'meta';
+   meta.textContent = `${senderProfile.username}:`;
 
-        content.textContent = msg.content;
 
-    }
+   const content = document.createElement('span');
+   content.className = 'msg-content';
 
-    const timestamp = document.createElement('span');
-    timestamp.className = 'message-time';
 
-    const sentAt = new Date(msg.created_at);
+   if (isBlocked) {
 
-    timestamp.textContent = sentAt.toLocaleTimeString([], {
-        hour: 'numeric',
-        minute: '2-digit'
-    });
 
-    div.appendChild(profileLink);
-    div.appendChild(meta);
-    div.appendChild(content);
-    div.appendChild(timestamp);
+       const blockedText = document.createElement('span');
+       blockedText.textContent =
+           'You have blocked this user, ';
 
-    if (currentUserId === MOD_UID) {
 
-        const deleteButton = document.createElement('button');
+       const showButton = document.createElement('button');
+       showButton.textContent = 'show anyway?';
 
-        deleteButton.textContent = 'Delete';
-        deleteButton.style.backgroundColor = '#ff0000';
 
-        deleteButton.addEventListener('click', () => {
-            deleteMessage(msg.id);
-        });
+       showButton.addEventListener('click', () => {
+           content.textContent = msg.content;
+       });
 
-        div.appendChild(deleteButton);
-    }
 
-    targetBox.appendChild(div);
-    if (scroll) {
-      targetBox.scrollTop = targetBox.scrollHeight;
-    }
+       content.appendChild(blockedText);
+       content.appendChild(showButton);
+
+
+   } else {
+
+
+       content.textContent = msg.content;
+
+
+   }
+
+
+   const timestamp = document.createElement('span');
+   timestamp.className = 'message-time';
+
+
+   const sentAt = new Date(msg.created_at);
+
+
+   timestamp.textContent = sentAt.toLocaleTimeString([], {
+       hour: 'numeric',
+       minute: '2-digit'
+   });
+
+
+   div.appendChild(profileLink);
+   div.appendChild(meta);
+   div.appendChild(content);
+   div.appendChild(timestamp);
+
+
+   if (currentUserId === MOD_UID) {
+
+
+       const deleteButton = document.createElement('button');
+
+
+       deleteButton.textContent = 'Delete';
+       deleteButton.style.backgroundColor = '#ff0000';
+
+
+       deleteButton.addEventListener('click', () => {
+           deleteMessage(msg.id);
+       });
+
+
+       div.appendChild(deleteButton);
+   }
+
+
+   targetBox.appendChild(div);
+   if (scroll) {
+     targetBox.scrollTop = targetBox.scrollHeight;
+   }
 }
+
 
 async function initializeChatroom() {
-  const { data: { user } } = await db.auth.getUser();
-  if (!user) {
-    alert("Please sign in first!");
-    window.location.href = "loginpage.html";
-    return;
-  }
-  currentUserId = user.id;
-  await loadNotificationStatus();
-  const myProfile = await getUserProfile(user.id);
+ const { data: { user } } = await db.auth.getUser();
+ if (!user) {
+   alert("Please sign in first!");
+   window.location.href = "loginpage.html";
+   return;
+ }
+ currentUserId = user.id;
+ await loadNotificationStatus();
+ const myProfile = await getUserProfile(user.id);
 
 
-  const { data: room, error } = await db
-    .from('chatrooms')
-    .select('*')
-    .eq('id', roomId)
-    .single();
 
-    if (error || !room) {
-    alert("Access Denied: You do not have permission to view this chatroom.");
-    window.location.href = "index.html";
-    return;
+
+ const { data: room, error } = await db
+   .from('chatrooms')
+   .select('*')
+   .eq('id', roomId)
+   .single();
+
+
+   if (error || !room) {
+   alert("Access Denied: You do not have permission to view this chatroom.");
+   window.location.href = "index.html";
+   return;
 }
+
 
 if (room.closed) {
-    messageInput.disabled = true;
-    messageForm.querySelector('button[type="submit"]').disabled = true;
+   messageInput.disabled = true;
+   messageForm.querySelector('button[type="submit"]').disabled = true;
 
-    const notice = document.createElement('p');
-    notice.textContent = 'This chatroom has been closed.';
-    notice.className = 'closed-chatroom-notice';
-    messageForm.before(notice);
+
+   const notice = document.createElement('p');
+   notice.textContent = 'This chatroom has been closed.';
+   notice.className = 'closed-chatroom-notice';
+   messageForm.before(notice);
 }
 
-  const heading = document.querySelector('h2');
+
+ const heading = document.querySelector('h2');
+
 
 if (heading) {
-    if (roomId.startsWith('dm_')) {
+   if (roomId.startsWith('dm_')) {
 
-        const { data: members } = await db
-            .from('chatroom_allowed_users')
-            .select('user_id')
-            .eq('chatroom_id', roomId);
 
-        const otherMember = members?.find(
-            member => member.user_id !== currentUserId
-        );
+       const { data: members } = await db
+           .from('chatroom_allowed_users')
+           .select('user_id')
+           .eq('chatroom_id', roomId);
 
-        if (otherMember) {
-            const otherProfile =
-                await getUserProfile(otherMember.user_id);
 
-            heading.textContent = otherProfile.username;
-        } else {
-            heading.textContent = "Direct Message";
-        }
+       const otherMember = members?.find(
+           member => member.user_id !== currentUserId
+       );
 
-    } else {
-        heading.textContent = room.name;
-    }
+
+       if (otherMember) {
+           const otherProfile =
+               await getUserProfile(otherMember.user_id);
+
+
+           heading.textContent = otherProfile.username;
+       } else {
+           heading.textContent = "Direct Message";
+       }
+
+
+   } else {
+       heading.textContent = room.name;
+   }
 }
 
-  chatBox.innerHTML = ''; 
-  await loadMessages();
-  listenForNewMessages();
+
+ chatBox.innerHTML = '';
+ await loadMessages();
+ listenForNewMessages();
 }
+
 
 async function loadMessages() {
-    const { data: { user } } = await db.auth.getUser();
+   const { data: { user } } = await db.auth.getUser();
 
-    if (!user) return;
 
-    chatBox.innerHTML = "Loading conversation...";
+   if (!user) return;
 
-    const { data: fetchedMessages, error } = await db
-        .from('messages')
-        .select('*')
-        .eq('chatroom_id', roomId)
-        .order('sequence_number', { ascending: true });
 
-    if (error) {
-        console.error("Could not load messages:", error);
-        chatBox.textContent = "Could not load messages.";
-        return;
-    }
+   chatBox.innerHTML = "Loading conversation...";
 
-    const { data: blockedUsers, error: blockedError } = await db
-    .from('relationships')
-    .select('id_2')
-    .eq('id_1', currentUserId)
-    .eq('status', 'blocked');
-    
-    if (blockedError) {
-        console.error('Could not load blocked users:', blockedError);
-    } else {
-        blockedUserIds = new Set((blockedUsers || []).map(user => user.id_2));
-    }
-    const temporaryBox = document.createElement('div');
 
-    if (fetchedMessages && fetchedMessages.length > 0) {
-        const renderedMessages = await Promise.all(
-            fetchedMessages.map(async (msg) => {
-                const messageContainer = document.createElement('div');
-                await appendMessage(msg, messageContainer, false);
-                return messageContainer.firstElementChild;
-            })
-        );
-        temporaryBox.append(...renderedMessages.filter(Boolean));
+   const { data: fetchedMessages, error } = await db
+       .from('messages')
+       .select('*')
+       .eq('chatroom_id', roomId)
+       .order('sequence_number', { ascending: true });
+
+
+   if (error) {
+       console.error("Could not load messages:", error);
+       chatBox.textContent = "Could not load messages.";
+       return;
+   }
+
+
+   const { data: blockedUsers, error: blockedError } = await db
+   .from('relationships')
+   .select('id_2')
+   .eq('id_1', currentUserId)
+   .eq('status', 'blocked');
+  
+   if (blockedError) {
+       console.error('Could not load blocked users:', blockedError);
+   } else {
+       blockedUserIds = new Set((blockedUsers || []).map(user => user.id_2));
+   }
+   const temporaryBox = document.createElement('div');
+
+
+   if (fetchedMessages && fetchedMessages.length > 0) {
+       const renderedMessages = await Promise.all(
+           fetchedMessages.map(async (msg) => {
+               const messageContainer = document.createElement('div');
+               await appendMessage(msg, messageContainer, false);
+               return messageContainer.firstElementChild;
+           })
+       );
+       temporaryBox.append(...renderedMessages.filter(Boolean));
 }
 
-    chatBox.innerHTML = "";
-    chatBox.append(...temporaryBox.children);
 
-    chatBox.scrollTop = chatBox.scrollHeight;
+   chatBox.innerHTML = "";
+   chatBox.append(...temporaryBox.children);
 
-    if (!fetchedMessages || fetchedMessages.length === 0) {
-        chatBox.textContent = "No messages yet.";
-        return;
-    }
 
-    const newestSequence =
-        fetchedMessages[fetchedMessages.length - 1].sequence_number;
+   chatBox.scrollTop = chatBox.scrollHeight;
 
-    const { data: updatedRows, error: readError } = await db
-        .from('chatroom_allowed_users')
-        .update({
-            last_read_sequence: newestSequence
-        })
-        .eq('chatroom_id', roomId)
-        .eq('user_id', user.id)
-        .select();
 
-    const { data: notificationRow, error: notificationReadError } = await db
-    .from('chatroom_notifications')
-    .update({
-        last_read_sequence: newestSequence,
-        up_to_date: true,
-        updated_at: new Date().toISOString()
-    })
-    .eq('chatroom_id', roomId)
-    .eq('user_id', currentUserId)
-    .select();
+   if (!fetchedMessages || fetchedMessages.length === 0) {
+       chatBox.textContent = "No messages yet.";
+       return;
+   }
 
-    if (notificationReadError) {
-        console.error(
-            'Could not mark notifications as read:',
-            notificationReadError
-        );
-    }
 
-    console.log("Updated membership:", updatedRows);
-    console.log("Update error:", readError);
-    if (readError) {
-        console.error(
-            "Could not mark messages as read:",
-            readError
-        );
-    }
-    document.dispatchEvent(
-      new CustomEvent("refresh-shared-header-notifications")
-    );
+   const newestSequence =
+       fetchedMessages[fetchedMessages.length - 1].sequence_number;
+
+
+   const { data: updatedRows, error: readError } = await db
+       .from('chatroom_allowed_users')
+       .update({
+           last_read_sequence: newestSequence
+       })
+       .eq('chatroom_id', roomId)
+       .eq('user_id', user.id)
+       .select();
+
+
+   const { data: notificationRow, error: notificationReadError } = await db
+   .from('chatroom_notifications')
+   .update({
+       last_read_sequence: newestSequence,
+       up_to_date: true,
+       updated_at: new Date().toISOString()
+   })
+   .eq('chatroom_id', roomId)
+   .eq('user_id', currentUserId)
+   .select();
+
+
+   if (notificationReadError) {
+       console.error(
+           'Could not mark notifications as read:',
+           notificationReadError
+       );
+   }
+
+
+   console.log("Updated membership:", updatedRows);
+   console.log("Update error:", readError);
+   if (readError) {
+       console.error(
+           "Could not mark messages as read:",
+           readError
+       );
+   }
+   document.dispatchEvent(
+     new CustomEvent("refresh-shared-header-notifications")
+   );
 }
+
 
 function listenForNewMessages() {
-  db
-    .channel(`room-messages-${roomId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `chatroom_id=eq.${roomId}`
-      },
-      async (payload) => {
-        const msg = payload.new;
+ db
+   .channel(`room-messages-${roomId}`)
+   .on(
+     'postgres_changes',
+     {
+       event: 'INSERT',
+       schema: 'public',
+       table: 'messages',
+       filter: `chatroom_id=eq.${roomId}`
+     },
+     async (payload) => {
+       const msg = payload.new;
 
-        const alreadyShown = [...chatBox.querySelectorAll('.message')]
-          .some(el => el.dataset.messageId === String(msg.id));
 
-        if (alreadyShown) return;
+       const alreadyShown = [...chatBox.querySelectorAll('.message')]
+         .some(el => el.dataset.messageId === String(msg.id));
 
-        if (chatBox.textContent.trim() === 'No messages yet.') {
-          chatBox.innerHTML = '';
-        }
 
-        await appendMessage(msg);
-      }
-    )
-    .subscribe((status) => {
-      if (status === 'CHANNEL_ERROR') {
-        console.error('Could not subscribe to chatroom messages.');
-      }
-    });
+       if (alreadyShown) return;
+
+
+       if (chatBox.textContent.trim() === 'No messages yet.') {
+         chatBox.innerHTML = '';
+       }
+
+
+       await appendMessage(msg);
+     }
+   )
+   .subscribe((status) => {
+     if (status === 'CHANNEL_ERROR') {
+       console.error('Could not subscribe to chatroom messages.');
+     }
+   });
 }
+
 
 async function sendMessage(text) {
-  const { error } = await db
-    .from('messages')
-    .insert([{ chatroom_id: roomId, content: text }]);
+ const { error } = await db
+   .from('messages')
+   .insert([{ chatroom_id: roomId, content: text }]);
 
-  if (error) {
-    alert("Could not send message.");
-  } else {
-    messageInput.value = '';
-  }
+
+ if (error) {
+   alert("Could not send message.");
+ } else {
+   messageInput.value = '';
+ }
 }
 async function deleteMessage(messageId) {
-  if (currentUserId !== MOD_UID) return;
+ if (currentUserId !== MOD_UID) return;
 
-  const { error } = await db
-    .from('messages')
-    .delete()
-    .eq('id', messageId);
 
-  if (error) {
-    console.error("Could not delete message:", error);
-    alert("Could not delete message.");
-  }
+ const { error } = await db
+   .from('messages')
+   .delete()
+   .eq('id', messageId);
+
+
+ if (error) {
+   console.error("Could not delete message:", error);
+   alert("Could not delete message.");
+ }
 }
+
+
 
 
 messageInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    messageForm.requestSubmit();
-  }
+ if (e.key === 'Enter' && !e.shiftKey) {
+   e.preventDefault();
+   messageForm.requestSubmit();
+ }
 });
 messageForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const text = messageInput.value.trim();
-  if (text) {
-    await sendMessage(text);
-  }
+ e.preventDefault();
+ const text = messageInput.value.trim();
+ if (text) {
+   await sendMessage(text);
+ }
 });
 
+
 document.addEventListener("shared-header-account-ready", async () => {
-    db = window.sharedSupabase;
-    await initializeChatroom();
+   db = window.sharedSupabase;
+   await initializeChatroom();
 }, { once: true });
 </script>
 
+
 </body>
 </html>
+
+
