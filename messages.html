@@ -30,6 +30,7 @@
 <script>
 
 let money = 0;
+let db = null;
 
 var link = document.querySelector("link[rel~='icon']");
 if (!link) {
@@ -147,9 +148,6 @@ for (const membership of dmMemberships) {
         console.error("Playback failed:", error);
     });
   }};
-document.addEventListener("shared-header-account-ready", () => {
-    initPage();
-}, { once: true });
 
 
 function listenForNotificationMessages() {
@@ -206,27 +204,7 @@ if (roomId && roomId.startsWith('dm_')) {
     notificationToggle.style.display = 'none';
 }
 
-async function loadNotificationStatus() {
-  if (!currentUserId || !roomId) return;
 
-  const { data, error } = await db
-    .from('chatroom_notifications')
-    .select('enabled')
-    .eq('chatroom_id', roomId)
-    .eq('user_id', currentUserId)
-    .maybeSingle();
-
-  if (error) {
-    console.error('Could not load notification status:', error);
-    return;
-  }
-
-  if (data?.enabled) {
-    notificationToggle.textContent = 'Disable notifications';
-  } else {
-    notificationToggle.textContent = 'Enable notifications';
-  }
-}
 async function toggleNotifications() {
   if (!currentUserId || !roomId) return;
 
@@ -286,28 +264,6 @@ async function toggleNotifications() {
   }
 }
 
-async function checkChatroomNotifications() {
-    if (!currentUserId) return false;
-
-    const { data, error } = await db
-        .from('chatroom_notifications')
-        .select('chatroom_id')
-        .eq('user_id', currentUserId)
-        .eq('enabled', true)
-        .eq('up_to_date', false);
-
-    if (error) {
-        console.error(
-            "Could not check chatroom notifications:",
-            error
-        );
-        return false;
-    }
-
-    return (data || []).some(
-        notification => notification.chatroom_id !== roomId
-    );
-}
 
 notificationToggle.addEventListener('click', toggleNotifications);
 
@@ -447,21 +403,22 @@ async function initializeChatroom() {
     .eq('id', roomId)
     .single();
 
-    if (room.closed) {
-      messageInput.disabled = true;
-      messageForm.querySelector('button[type="submit"]').disabled = true;
-  
-      const notice = document.createElement('p');
-      notice.textContent = 'This chatroom has been closed.';
-      notice.className = 'closed-chatroom-notice';
-     messageForm.before(notice);
-    }
+    if (error || !room) {
+    alert("Access Denied: You do not have permission to view this chatroom.");
+    window.location.href = "index.html";
+    return;
+}
 
-  if (error || !room) {
-      alert("Access Denied: You do not have permission to view this chatroom.");
-      window.location.href = "index.html"; 
-      return;
-  }
+if (room.closed) {
+    messageInput.disabled = true;
+    messageForm.querySelector('button[type="submit"]').disabled = true;
+
+    const notice = document.createElement('p');
+    notice.textContent = 'This chatroom has been closed.';
+    notice.className = 'closed-chatroom-notice';
+    messageForm.before(notice);
+}
+
   const heading = document.querySelector('h2');
 
 if (heading) {
@@ -492,7 +449,6 @@ if (heading) {
 
   chatBox.innerHTML = ''; 
   await loadMessages();
-  await loadNotifications();
   listenForNewMessages();
 }
 
@@ -571,6 +527,9 @@ async function loadMessages() {
             readError
         );
     }
+    document.dispatchEvent(
+      new CustomEvent("refresh-shared-header-notifications")
+    );
 }
 
 async function sendMessage(text) {
@@ -598,41 +557,7 @@ async function deleteMessage(messageId) {
   }
 }
 
-function listenForNewMessages() {
-  db
-    .channel(`room-${roomId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages'
-      },
-      async (payload) => {
-        if (payload.new && payload.new.chatroom_id === roomId) {
-          await appendMessage(payload.new);
-        }
-      }
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'messages'
-      },
-      (payload) => {
-        const deletedMessage = document.querySelector(
-          `[data-message-id="${payload.old.id}"]`
-        );
 
-        if (deletedMessage) {
-          deletedMessage.remove();
-        }
-      }
-    )
-    .subscribe();
-}
 
 
 messageForm.addEventListener('submit', async (e) => {
