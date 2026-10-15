@@ -5,16 +5,15 @@
 <a href="shop.html">shop</a>
 <a href="chatrooms.html">chatrooms</a>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
-const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
-const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+document.addEventListener("shared-header-account-ready", () => {
+  load();
+}, { once: true });
 
 async function load() {
     const urlParams = new URLSearchParams(window.location.search);
-    const { data: { session } } = await supabaser.auth.getSession();
+    const { data: { session } } = await window.sharedSupabase.auth.getSession();
     
     if (!session) {
         alert("hey you aint meant to be e're! get 'em boys!!");
@@ -22,7 +21,7 @@ async function load() {
         return;
     }
 
-    const { data: myData, error } = await supabaser
+    const { data: myData, error } = await window.sharedSupabase
         .from('profiles')
         .select('username')
         .eq('id', session.user.id)
@@ -36,5 +35,4 @@ async function load() {
     }
 }
 
-load();
 </script>

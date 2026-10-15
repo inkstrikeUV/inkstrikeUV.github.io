@@ -67,6 +67,7 @@
         script.onerror = reject;
         document.head.appendChild(script);
       });
+      window.sharedSupabase = db;
     }
 
     const db = window.supabase.createClient(
