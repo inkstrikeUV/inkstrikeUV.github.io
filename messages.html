@@ -50,138 +50,6 @@ async function initPage() {
             .eq('id', session.user.id)
             .single();
     }}
-async function loadNotifications() {
-    const { data: { session } } = await db.auth.getSession();
-    
-    if (!session) {
-        window.location.href = "loginpage.html";
-        return;
-    }
-
-const myId = session.user.id;
-
-    const { data: requests, error: err1 } = await db
-        .from('relationships')
-        .select('id, id_1, profiles!relationships_id_1_fkey(username)')
-        .eq('id_2', myId)
-        .eq('status', 'requested');
-
-    const { data: renames, error: err2 } = await db
-        .from('relationships')
-        .select('id, id_1, id_2, proposed_name, namerequesterid, target:profiles!namerequesterid(username)')
-        .eq('display_request', true)
-        .or(`id_1.eq.${myId},id_2.eq.${myId}`);
-
-
-    if (err1 || err2) {
-        console.error({ err1, err2 });
-        return;
-    }
-
-    const incomingRenames = renames.filter(r => r.namerequesterid !== myId); 
-
-const { data: memberships, error: membershipError } =
-        await db
-            .from('chatroom_allowed_users')
-            .select(`
-                chatroom_id,
-                last_read_sequence,
-                chatrooms!inner (
-                    id,
-                    privacy_type
-                )
-            `)
-            .eq('user_id', myId)
-            .eq('chatrooms.privacy_type', 'private');
-
-
-    if (membershipError) {
-    console.error("Could not load DM memberships:", membershipError);
-}
-
-let hasUnreadDMs = false;
-
-const dmMemberships = (memberships || []).filter(
-    membership => membership.chatroom_id.startsWith("dm_")
-);
-
-for (const membership of dmMemberships) {
-
-    if (!document.hidden && membership.chatroom_id === roomId) {
-        continue;
-    }
-
-    const lastRead = membership.last_read_sequence || 0;
-
-    const { data: unreadMessages, error: messageError } =
-        await db
-            .from('messages')
-            .select('id')
-            .eq('chatroom_id', membership.chatroom_id)
-            .gt('sequence_number', lastRead)
-            .neq('sender_id', myId)
-            .order('sequence_number', { ascending: true });
-
-    if (messageError) {
-        console.error(
-            "Could not load unread messages:",
-            messageError
-        );
-        continue;
-    }
-
-    if (unreadMessages && unreadMessages.length > 0) {
-        hasUnreadDMs = true;
-    }
-}
-    const hasUnreadChatroomNotifications =
-    await checkChatroomNotifications();
-    if (requests.length === 0 && incomingRenames.length === 0 && !hasUnreadDMs && !hasUnreadChatroomNotifications) {
-    document.getElementById("notifbell").src = "bell.png";
-    link.href = "icon.ico";
-    } else {
-    document.getElementById("notifbell").src = "notif.png";
-    link.href = "notificon.ico";
-
-    const audio = new Audio("notifsnd.mp3");
-    audio.play().catch(error => {
-        console.error("Playback failed:", error);
-    });
-  }};
-
-
-function listenForNotificationMessages() {
-    db
-        .channel('notification-messages')
-        .on(
-            'postgres_changes',
-            {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'messages'
-            },
-            async (payload) => {
-                const message = payload.new;
-                if (message.sender_id === currentUserId) {
-                    return;
-                }
-                if (
-                    !document.hidden &&
-                    message.chatroom_id === roomId
-                ) {
-                    return;
-                }
-                document.getElementById("notifbell").src = "notif.png";
-                link.href = "notificon.ico";
-
-                const audio = new Audio("notifsnd.mp3");
-                audio.play().catch(error => {
-                    console.error("Playback failed:", error);
-                });
-            }
-        )
-        .subscribe();
-}
 
 const MOD_UID = "0996c7e8-6e8b-4725-920b-1f1c162259b0";
 
@@ -266,6 +134,32 @@ async function toggleNotifications() {
 
 
 notificationToggle.addEventListener('click', toggleNotifications);
+
+
+async function loadNotificationStatus() {
+  if (!currentUserId || !roomId) return;
+
+  if (roomId.startsWith('dm_')) {
+    notificationToggle.style.display = 'none';
+    return;
+  }
+
+  const { data, error } = await db
+    .from('chatroom_notifications')
+    .select('enabled')
+    .eq('chatroom_id', roomId)
+    .eq('user_id', currentUserId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Could not load notification status:', error);
+    notificationToggle.textContent = 'Enable notifications';
+    return;
+  }
+
+  notificationToggle.textContent =
+    data?.enabled ? 'Disable notifications' : 'Enable notifications';
+}
 
 const profileCache = {};
 
@@ -530,6 +424,39 @@ async function loadMessages() {
     document.dispatchEvent(
       new CustomEvent("refresh-shared-header-notifications")
     );
+}
+
+function listenForNewMessages() {
+  db
+    .channel(`room-messages-${roomId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `chatroom_id=eq.${roomId}`
+      },
+      async (payload) => {
+        const msg = payload.new;
+
+        const alreadyShown = [...chatBox.querySelectorAll('.message')]
+          .some(el => el.dataset.messageId === String(msg.id));
+
+        if (alreadyShown) return;
+
+        if (chatBox.textContent.trim() === 'No messages yet.') {
+          chatBox.innerHTML = '';
+        }
+
+        await appendMessage(msg);
+      }
+    )
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR') {
+        console.error('Could not subscribe to chatroom messages.');
+      }
+    });
 }
 
 async function sendMessage(text) {
