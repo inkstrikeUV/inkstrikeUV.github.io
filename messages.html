@@ -7,33 +7,8 @@
 </head>
 <body>
 
-<header>
-  <div class="header-left">
-    <div id="loginlink">
-      <a href="loginpage.html" style="color:#300385">sign in</a>
-    </div>
-    <div id="accountlink" style="display: none;">
-      <a href="profile.html" style="color:#300385"><span id="username-display">Loading...</span></a>
-    </div>
-    <div class="money-container">
-      Money:<span id="money-display">Loading...</span>
-    </div>
-  </div>
-
-  <div class="header-center">
-    <img src="ezgif-6dbe54e04356ef45.gif" height="50">
-  </div>
-
-  <div class="header-right">
-
-    <div class="notification-wrapper">
-      <a href="index.html"><img src="hoamcolonthree.png" height="50" width="50" alt="Hoam :3"></a>
-      <a href="notifications.html">
-        <img id="notifbell" src="bell.png" height="50" width="50" alt="Notifications">
-      </a>
-    </div>
-  </div>
-</header>
+<div id="site-header"></div>
+<script src="header.js" defer></script>
 
 <main style="padding: 20px;">
 <div class="chatroom-header">
@@ -698,9 +673,7 @@ messageForm.addEventListener('submit', async (e) => {
   }
 });
 
-initializeChatroom().then(() => {
-    listenForNotificationMessages();
-});
+initializeChatroom();
 </script>
 
 </body>

@@ -313,9 +313,7 @@
         const state = await getUnreadState();
 
         setNotificationAppearance(state.hasUnread);
-
-
-        lastAlertedKey = state.keys.sort().join("|");
+        
       } catch (error) {
         console.error("Could not check notifications:", error);
       } finally {
