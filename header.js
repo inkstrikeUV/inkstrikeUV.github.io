@@ -67,13 +67,13 @@
         script.onerror = reject;
         document.head.appendChild(script);
       });
-      window.sharedSupabase = db;
     }
 
     const db = window.supabase.createClient(
       "https://cwmmlsaccrtcxagehhkt.supabase.co",
       "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P"
     );
+    window.sharedSupabase = db; 
 
     const loginLink = document.getElementById("loginlink");
     const accountLink = document.getElementById("accountlink");

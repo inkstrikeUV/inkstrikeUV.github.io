@@ -7,9 +7,16 @@
 
 
 <script>
+
 document.addEventListener("shared-header-account-ready", () => {
+  if (!window.sharedSupabase) {
+    console.error("The shared Supabase client was not initialized.");
+    return;
+  }
+
   load();
 }, { once: true });
+
 
 async function load() {
     const urlParams = new URLSearchParams(window.location.search);
