@@ -161,6 +161,7 @@ async function loadNotificationStatus() {
     data?.enabled ? 'Disable notifications' : 'Enable notifications';
 }
 
+let blockedUserIds = new Set();
 const profileCache = {};
 
 async function getUserProfile(userId) {
@@ -186,18 +187,7 @@ async function appendMessage(msg, targetBox = chatBox, scroll = true) {
     const pfpSrc = senderProfile.avatar_url || 'default-pfp.png';
     const userColor = senderProfile.bgcolor || '#8f54ff';
 
-    const { data: blockRelationship, error: blockError } =
-        await db
-            .from('relationships')
-            .select('id')
-            .eq('id_1', currentUserId)
-            .eq('id_2', msg.sender_id)
-            .eq('status', 'blocked')
-            .maybeSingle();
-
-    if (blockError) {
-        console.error("Could not check blocked user:", blockError);
-    }
+    const isBlocked = blockedUserIds.has(msg.sender_id);
 
     const div = document.createElement('div');
     div.className = 'message';
@@ -222,7 +212,7 @@ async function appendMessage(msg, targetBox = chatBox, scroll = true) {
     const content = document.createElement('span');
     content.className = 'msg-content';
 
-    if (blockRelationship) {
+    if (isBlocked) {
 
         const blockedText = document.createElement('span');
         blockedText.textContent =
@@ -365,13 +355,29 @@ async function loadMessages() {
         return;
     }
 
+    const { data: blockedUsers, error: blockedError } = await db
+    .from('relationships')
+    .select('id_2')
+    .eq('id_1', currentUserId)
+    .eq('status', 'blocked');
+    
+    if (blockedError) {
+        console.error('Could not load blocked users:', blockedError);
+    } else {
+        blockedUserIds = new Set((blockedUsers || []).map(user => user.id_2));
+    }
     const temporaryBox = document.createElement('div');
 
     if (fetchedMessages && fetchedMessages.length > 0) {
-        for (const msg of fetchedMessages) {
-            await appendMessage(msg, temporaryBox, false);
-        }
-    }
+        const renderedMessages = await Promise.all(
+            fetchedMessages.map(async (msg) => {
+                const messageContainer = document.createElement('div');
+                await appendMessage(msg, messageContainer, false);
+                return messageContainer.firstElementChild;
+            })
+        );
+        temporaryBox.append(...renderedMessages.filter(Boolean));
+}
 
     chatBox.innerHTML = "";
     chatBox.append(...temporaryBox.children);
