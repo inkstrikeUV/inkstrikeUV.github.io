@@ -73,7 +73,8 @@
       "https://cwmmlsaccrtcxagehhkt.supabase.co",
       "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P"
     );
-    window.sharedSupabase = db; 
+    window.sharedSupabase = db;
+    console.log("Shared Supabase client created:", !!window.sharedSupabase);
 
     const loginLink = document.getElementById("loginlink");
     const accountLink = document.getElementById("accountlink");
@@ -463,7 +464,10 @@
       "refresh-shared-header-notifications",
       refreshNotifications
     );
-
+    console.log(
+      "Shared client before ready event:",
+      !!window.sharedSupabase
+    );
     document.dispatchEvent(
       new CustomEvent("shared-header-account-ready")
     );
