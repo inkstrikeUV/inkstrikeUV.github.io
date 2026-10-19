@@ -29,7 +29,7 @@
 
 <script>
 
-
+const Font = new FontFace('vifont2', 'url(Vifont2.ttf)');
 let money = 0;
 let db = null;
 
@@ -234,6 +234,7 @@ async function appendMessage(msg, targetBox = chatBox, scroll = true) {
    div.className = 'message';
    div.dataset.messageId = msg.id;
    div.style.setProperty('--user-color', userColor);
+   div.style.fontFamily = "vifont2";
 
 
    const profileLink = document.createElement('a');
