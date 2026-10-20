@@ -332,86 +332,149 @@ async function appendMessage(msg, targetBox = chatBox, scroll = true) {
    }
 }
 
+async function checkRoomAccess(room) {
+  if (roomId.startsWith('dm_')) {
+    const { data: members, error } = await db
+      .from('chatroom_allowed_users')
+      .select('user_id')
+      .eq('chatroom_id', roomId)
+      .eq('status', 'member');
+
+    if (error) {
+      console.error('Could not verify DM membership:', error);
+      return false;
+    }
+
+    return (members || []).some(
+      member => member.user_id === currentUserId
+    );
+  }
+
+  if (room.privacy_type === 'private') {
+    if (room.creator_id === currentUserId) {
+      return true;
+    }
+
+    if (room.closed) {
+      return false;
+    }
+
+    const { data: membership, error } = await db
+      .from('chatroom_allowed_users')
+      .select('user_id')
+      .eq('chatroom_id', roomId)
+      .eq('user_id', currentUserId)
+      .eq('status', 'member')
+      .maybeSingle();
+
+    if (error) {
+      console.error('Could not verify private-room membership:', error);
+      return false;
+    }
+
+    return !!membership;
+  }
+
+  if (room.privacy_type === 'public') {
+    const { data: ban, error } = await db
+      .from('chatroom_allowed_users')
+      .select('user_id')
+      .eq('chatroom_id', roomId)
+      .eq('user_id', currentUserId)
+      .eq('status', 'banned')
+      .maybeSingle();
+
+    if (error) {
+      console.error('Could not check public-room ban:', error);
+      return false;
+    }
+
+    return !ban;
+  }
+
+  return false;
+}
 
 async function initializeChatroom() {
- const { data: { user } } = await db.auth.getUser();
- if (!user) {
-   alert("Please sign in first!");
-   window.location.href = "loginpage.html";
-   return;
- }
- currentUserId = user.id;
- await loadNotificationStatus();
+  const {
+    data: { user },
+    error: authError
+  } = await db.auth.getUser();
 
+  if (authError || !user) {
+    alert('Please sign in first!');
+    window.location.href = 'loginpage.html';
+    return;
+  }
 
+  currentUserId = user.id;
 
+  const { data: room, error } = await db
+    .from('chatrooms')
+    .select('id, name, creator_id, privacy_type, closed')
+    .eq('id', roomId)
+    .maybeSingle();
 
- const { data: room, error } = await db
-   .from('chatrooms')
-   .select('*')
-   .eq('id', roomId)
-   .single();
+  if (error || !room) {
+    alert('Chatroom not found or unavailable.');
+    window.location.href = 'index.html';
+    return;
+  }
 
+  const hasAccess = await checkRoomAccess(room);
 
-   if (error || !room) {
-   alert("Access Denied: You do not have permission to view this chatroom.");
-   window.location.href = "index.html";
-   return;
+  if (!hasAccess) {
+    alert('Access denied: you do not have permission to view this chatroom.');
+    window.location.href = 'index.html';
+    return;
+  }
+
+  const isClosed = room.closed === true;
+
+  if (isClosed) {
+    messageInput.disabled = true;
+    messageForm.querySelector('button[type="submit"]').disabled = true;
+    messageInput.placeholder = 'This chatroom is closed.';
+
+    const notice = document.createElement('p');
+    notice.textContent = 'This chatroom has been closed.';
+    notice.className = 'closed-chatroom-notice';
+    messageForm.before(notice);
+  }
+  await loadNotificationStatus();
+
+  const heading = document.querySelector('.chatroom-header h2');
+
+  if (heading) {
+    if (roomId.startsWith('dm_')) {
+      const { data: members, error: membersError } = await db
+        .from('chatroom_allowed_users')
+        .select('user_id')
+        .eq('chatroom_id', roomId)
+        .eq('status', 'member');
+
+      const otherMember = !membersError
+        ? members?.find(member => member.user_id !== currentUserId)
+        : null;
+
+      if (otherMember) {
+        const otherProfile = await getUserProfile(otherMember.user_id);
+        heading.textContent = otherProfile.username;
+      } else {
+        heading.textContent = 'Direct Message';
+      }
+    } else {
+      heading.textContent = room.name;
+    }
+  }
+
+  chatBox.innerHTML = '';
+  await loadMessages();
+
+  if (!isClosed) {
+    listenForNewMessages();
+  }
 }
-
-
-if (room.closed) {
-   messageInput.disabled = true;
-   messageForm.querySelector('button[type="submit"]').disabled = true;
-
-
-   const notice = document.createElement('p');
-   notice.textContent = 'This chatroom has been closed.';
-   notice.className = 'closed-chatroom-notice';
-   messageForm.before(notice);
-}
-
-
- const heading = document.querySelector('h2');
-
-
-if (heading) {
-   if (roomId.startsWith('dm_')) {
-
-
-       const { data: members } = await db
-           .from('chatroom_allowed_users')
-           .select('user_id')
-           .eq('chatroom_id', roomId);
-
-
-       const otherMember = members?.find(
-           member => member.user_id !== currentUserId
-       );
-
-
-       if (otherMember) {
-           const otherProfile =
-               await getUserProfile(otherMember.user_id);
-
-
-           heading.textContent = otherProfile.username;
-       } else {
-           heading.textContent = "Direct Message";
-       }
-
-
-   } else {
-       heading.textContent = room.name;
-   }
-}
-
-
- chatBox.innerHTML = '';
- await loadMessages();
- listenForNewMessages();
-}
-
 
 async function loadMessages() {
    const { data: { user } } = await db.auth.getUser();
@@ -563,34 +626,24 @@ function listenForNewMessages() {
 
 
 async function sendMessage(text) {
- const { error } = await db
-   .from('messages')
-   .insert([{ chatroom_id: roomId, content: text }]);
+  if (!currentUserId || !roomId || messageInput.disabled) {
+    return;
+  }
 
+  const { error } = await db
+    .from('messages')
+    .insert([{
+      chatroom_id: roomId,
+      content: text
+    }]);
 
- if (error) {
-   alert("Could not send message.");
- } else {
-   messageInput.value = '';
- }
+  if (error) {
+    console.error('Could not send message:', error);
+    alert('Could not send message.');
+  } else {
+    messageInput.value = '';
+  }
 }
-async function deleteMessage(messageId) {
- if (currentUserId !== MOD_UID) return;
-
-
- const { error } = await db
-   .from('messages')
-   .delete()
-   .eq('id', messageId);
-
-
- if (error) {
-   console.error("Could not delete message:", error);
-   alert("Could not delete message.");
- }
-}
-
-
 
 
 messageInput.addEventListener('keydown', (e) => {

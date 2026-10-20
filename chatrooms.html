@@ -301,28 +301,56 @@ friendList.appendChild(label);
 async function loadPublicRooms() {
     const roomList = document.getElementById("public-rooms");
     if (!roomList) return;
+
     const { data: { session } } = await supabaser.auth.getSession();
+
     if (!session) {
-        roomList.innerHTML = "<p>Please log in first.</p>";
+        roomList.textContent = "Please log in first.";
         return;
     }
+
+    const myId = session.user.id;
+
     const { data: rooms, error } = await supabaser
         .from("chatrooms")
         .select("id, name, creator_id, closed")
         .eq("privacy_type", "public")
         .eq("closed", false)
         .order("name", { ascending: true });
+
     if (error) {
         console.error("Could not load public chatrooms:", error);
-        roomList.innerHTML = "<p>Could not load public chatrooms.</p>";
+        roomList.textContent = "Could not load public chatrooms.";
         return;
     }
+
+    const { data: bans, error: banError } = await supabaser
+        .from("chatroom_allowed_users")
+        .select("chatroom_id")
+        .eq("user_id", myId)
+        .eq("status", "banned");
+
+    if (banError) {
+        console.error("Could not check chatroom bans:", banError);
+        roomList.textContent = "Could not check your chatroom access.";
+        return;
+    }
+
+    const bannedRoomIds = new Set(
+        (bans || []).map(ban => ban.chatroom_id)
+    );
+
+    const visibleRooms = (rooms || []).filter(
+        room => !bannedRoomIds.has(room.id)
+    );
     roomList.innerHTML = "";
-    if (!rooms || rooms.length === 0) {
-        roomList.innerHTML = "<p>There aren't any public chatrooms yet!</p>";
+
+    if (visibleRooms.length === 0) {
+        roomList.textContent = "There aren't any public chatrooms available!";
         return;
     }
-    rooms.forEach(room => {
+
+    visibleRooms.forEach(room => {
         const roomDiv = document.createElement("div");
         roomDiv.className = "chatroom-entry";
         const roomTitle = document.createElement("h3");
@@ -332,7 +360,8 @@ async function loadPublicRooms() {
         enterButton.textContent = "Enter Chatroom";
         enterButton.onclick = () => openChatroom(room.id);
         roomDiv.appendChild(enterButton);
-        if (room.creator_id === session.user.id) {
+
+        if (room.creator_id === myId) {
             const manageButton = document.createElement("button");
             manageButton.textContent = "Manage Chatroom";
             manageButton.onclick = () => manageChatroom(room.id);
@@ -358,20 +387,21 @@ async function loadPrivateRooms() {
     }
 
     const myId = session.user.id;
-
-    const { data: memberships, error } =
-        await supabaser
-            .from("chatroom_allowed_users")
-            .select(`
-                chatroom_id,
-                chatrooms (
-                    id,
-                    name,
-                    creator_id,
-                    closed
-                )
-            `)
-            .eq("user_id", myId);
+    const { data: memberships, error } = await supabaser
+    .from("chatroom_allowed_users")
+    .select(`
+        chatroom_id,
+        status,
+        chatrooms (
+            id,
+            name,
+            creator_id,
+            privacy_type,
+            closed
+        )
+    `)
+    .eq("user_id", myId)
+    .eq("status", "member");
 
     if (error) {
         console.error("Could not load private chatrooms:", error);
@@ -383,6 +413,7 @@ async function loadPrivateRooms() {
         membership =>
             membership.chatroom_id.startsWith("chat_") &&
             membership.chatrooms &&
+            membership.chatrooms.privacy_type === "private" &&
             membership.chatrooms.closed === false
     );
     if (!privmemberships || privmemberships.length === 0) {
@@ -523,6 +554,27 @@ async function leaveChatroom(roomId) {
         return;
     }
 
+    const { data: room, error: roomError } = await supabaser
+        .from("chatrooms")
+        .select("id, privacy_type, creator_id")
+        .eq("id", roomId)
+        .single();
+
+    if (roomError || !room) {
+        alert("Could not find this chatroom.");
+        return;
+    }
+
+    if (room.privacy_type !== "private") {
+        alert("You cannot leave a public chatroom.");
+        return;
+    }
+
+    if (room.creator_id === session.user.id) {
+        alert("The owner cannot leave their own chatroom.");
+        return;
+    }
+
     if (!confirm("Are you sure you want to leave this chatroom?")) {
         return;
     }
@@ -531,7 +583,8 @@ async function leaveChatroom(roomId) {
         .from("chatroom_allowed_users")
         .delete()
         .eq("chatroom_id", roomId)
-        .eq("user_id", session.user.id);
+        .eq("user_id", session.user.id)
+        .eq("status", "member");
 
     if (error) {
         console.error("Could not leave chatroom:", error);
@@ -1176,6 +1229,21 @@ async function loadArchivedRooms() {
 
     const myId = session.user.id;
 
+    const { data: bans, error: banError } = await supabaser
+        .from("chatroom_allowed_users")
+        .select("chatroom_id")
+        .eq("user_id", myId)
+        .eq("status", "banned");
+
+    if (banError) {
+        console.error("Could not check archived-room bans:", banError);
+        roomList.textContent = "Could not check your archive access.";
+        return;
+    }
+
+    const bannedRoomIds = new Set(
+        (bans || []).map(ban => ban.chatroom_id)
+    );
     const { data: publicRooms, error: publicError } = await supabaser
         .from("chatrooms")
         .select("id, name, creator_id, privacy_type, closed")
@@ -1203,7 +1271,15 @@ async function loadArchivedRooms() {
         return;
     }
 
-    const rooms = [...(publicRooms || []), ...(privateRooms || [])];
+    const visiblePublicRooms = (publicRooms || []).filter(
+        room => !bannedRoomIds.has(room.id)
+    );
+
+    const rooms = [
+        ...visiblePublicRooms,
+        ...(privateRooms || [])
+    ];
+
     roomList.innerHTML = "";
 
     if (rooms.length === 0) {
