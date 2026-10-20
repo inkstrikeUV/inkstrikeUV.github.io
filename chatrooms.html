@@ -5,39 +5,267 @@
   <link rel="icon" type="image/x-icon" href="icon.ico">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-
 <body>
-    <body2>
-<div class="chat-layout">
+    <div id="site-header"></div>
+    <script src="header.js" defer></script>
+  <div class="chat-layout">
     <aside class="chat-sidebar">
-        <h2>Chatrooms</h2>
-        <button onclick="showTab('public')">
-            Public
-        </button>
-        <button onclick="showTab('private')">
-            Private
-        </button>
-        <button onclick="showTab('archives')">
-            Archives
-        </button>
-        <button onclick="showTab('dms')">
-            DMs
-        </button>
-        <button onclick="showTab('create')">
-            Make Chatroom
-        </button>
-        <hr>
-    </aside>
-    </body2>
-    <main id="chat-content">
-    </main>
+      <h2>Chatrooms</h2>
 
-</div>
-</center>
+      <button onclick="showTab('public')">Public</button>
+      <button onclick="showTab('private')">Private</button>
+      <button onclick="showTab('archives')">Archives</button>
+      <button onclick="showTab('dms')">DMs</button>
+      <button onclick="showTab('create')">Make Chatroom</button>
+
+      <hr>
+    </aside>
+
+    <main id="chat-content"></main>
+  </div>
 <script>
-const SUPABASE_URL = "https://cwmmlsaccrtcxagehhkt.supabase.co"; 
-const SUPABASE_ANON_KEY = "sb_publishable_PeeW6cNPzT2lo9sKgYTsJA_m2t2Wn_P";
-const supabaser = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+var link = document.querySelector("link[rel~='icon']");
+if (!link) {
+   link = document.createElement('link');
+   link.rel = 'icon';
+   document.head.appendChild(link);
+}
+
+function toggleInlineRoomEditor(room, roomDiv) {
+
+    document.querySelectorAll(".room-editor").forEach(editor => {
+        editor.classList.remove("open");
+        editor.remove();
+    });
+
+    if (roomDiv.dataset.editorOpen === "true") {
+        delete roomDiv.dataset.editorOpen;
+        return;
+    }
+
+    roomDiv.dataset.editorOpen = "true";
+
+    const editor = document.createElement("div");
+    editor.className = "room-editor";
+
+    const fields = document.createElement("div");
+    fields.className = "room-edit-fields";
+
+    const nameLabel = document.createElement("label");
+    nameLabel.textContent = "Change name: ";
+
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.maxLength = 50;
+    nameInput.value = room.name;
+    nameInput.dataset.editRoomName = "";
+
+    nameLabel.appendChild(nameInput);
+    fields.appendChild(nameLabel);
+
+    const privacyField = document.createElement("fieldset");
+    const legend = document.createElement("legend");
+    legend.textContent = "Change Privacy:";
+    privacyField.appendChild(legend);
+
+    ["public", "private"].forEach(type => {
+        const label = document.createElement("label");
+        const radio = document.createElement("input");
+
+        radio.type = "radio";
+        radio.name = `privacy-${room.id}`;
+        radio.value = type;
+        radio.checked = room.privacy_type === type;
+
+        label.appendChild(radio);
+        label.appendChild(
+            document.createTextNode(
+                type === "public" ? " Public" : " Private"
+            )
+        );
+
+        privacyField.appendChild(label);
+    });
+
+    fields.appendChild(privacyField);
+
+    const saveButton = document.createElement("button");
+    saveButton.textContent = "Save Changes";
+    saveButton.onclick = () => saveInlineChatroomEdits(room, roomDiv);
+
+    fields.appendChild(saveButton);
+
+    const memberButton = document.createElement("button");
+    memberButton.textContent = "Manage Members";
+    memberButton.onclick = () => manageMembers(room.id);
+
+    fields.appendChild(memberButton);
+
+    const status = document.createElement("div");
+    status.className = "room-edit-status";
+
+    const statusButton = document.createElement("button");
+    statusButton.textContent = room.closed
+        ? "Reopen Chatroom?"
+        : "Close Chatroom?";
+
+    statusButton.onclick = () =>
+        toggleInlineChatroomClosed(room.id, room.closed);
+
+    status.appendChild(statusButton);
+
+    editor.appendChild(fields);
+    editor.appendChild(status);
+    roomDiv.appendChild(editor);
+
+    requestAnimationFrame(() => {
+        editor.classList.add("open");
+    });
+}
+
+async function saveInlineChatroomEdits(room, roomDiv) {
+    const nameInput = roomDiv.querySelector("[data-edit-room-name]");
+    const privacyInput = roomDiv.querySelector(
+        `input[name="privacy-${room.id}"]:checked`
+    );
+
+    const newName = nameInput?.value.trim();
+    const newPrivacy = privacyInput?.value;
+
+    if (!newName) {
+        alert("Please enter a chatroom name.");
+        return;
+    }
+
+    if (!newPrivacy) {
+        alert("Please select a privacy option.");
+        return;
+    }
+
+    const { data: { session } } = await supabaser.auth.getSession();
+
+    if (!session) {
+        alert("Please log in first.");
+        return;
+    }
+
+    const { data: currentRoom, error: roomError } = await supabaser
+        .from("chatrooms")
+        .select("id, creator_id, privacy_type")
+        .eq("id", room.id)
+        .single();
+
+    if (roomError || !currentRoom) {
+        alert("Could not find this chatroom.");
+        return;
+    }
+
+    if (currentRoom.creator_id !== session.user.id) {
+        alert("You aren't the owner of this chatroom.");
+        return;
+    }
+
+    const { error } = await supabaser
+        .from("chatrooms")
+        .update({
+            name: newName,
+            privacy_type: newPrivacy
+        })
+        .eq("id", room.id);
+
+    if (error) {
+        console.error("Could not update chatroom:", error);
+        alert("Could not save changes: " + error.message);
+        return;
+    }
+
+    if (newPrivacy === "private") {
+        const { data: membership, error: membershipError } =
+            await supabaser
+                .from("chatroom_allowed_users")
+                .select("user_id")
+                .eq("chatroom_id", room.id)
+                .eq("user_id", session.user.id)
+                .eq("status", "member")
+                .maybeSingle();
+
+        if (membershipError) {
+            alert("The room was updated, but owner membership could not be checked.");
+            return;
+        }
+
+        if (!membership) {
+            const { error: insertError } = await supabaser
+                .from("chatroom_allowed_users")
+                .insert({
+                    chatroom_id: room.id,
+                    user_id: session.user.id,
+                    last_read_sequence: 0,
+                    status: "member"
+                });
+
+            if (insertError) {
+                console.error("Could not add owner membership:", insertError);
+                alert(
+                    "The room privacy changed, but the owner membership could not be added. Check your Supabase policies."
+                );
+                return;
+            }
+        }
+    }
+
+    alert("Chatroom updated!");
+
+    showTab(newPrivacy === "private" ? "private" : "public");
+}
+
+async function toggleInlineChatroomClosed(roomId, currentlyClosed) {
+    const { data: { session } } = await supabaser.auth.getSession();
+
+    if (!session) {
+        alert("Please log in first.");
+        return;
+    }
+
+    const { data: room, error: roomError } = await supabaser
+        .from("chatrooms")
+        .select("id, creator_id, privacy_type")
+        .eq("id", roomId)
+        .single();
+
+    if (roomError || !room) {
+        alert("Could not find this chatroom.");
+        return;
+    }
+
+    if (room.creator_id !== session.user.id) {
+        alert("Only the owner can close or reopen this chatroom.");
+        return;
+    }
+
+    const action = currentlyClosed ? "reopen" : "close";
+
+    if (!confirm(`Are you sure you want to ${action} this chatroom?`)) {
+        return;
+    }
+
+    const { error } = await supabaser
+        .from("chatrooms")
+        .update({ closed: !currentlyClosed })
+        .eq("id", roomId);
+
+    if (error) {
+        console.error("Could not update chatroom status:", error);
+        alert("Could not update the chatroom: " + error.message);
+        return;
+    }
+
+    showTab(
+        currentlyClosed
+            ? (room.privacy_type === "private" ? "private" : "public")
+            : "archives"
+    );
+}
 
 function showTab(tab) {
     const content = document.getElementById("chat-content");
@@ -306,7 +534,7 @@ async function loadPublicRooms() {
 
     const { data: rooms, error } = await supabaser
         .from("chatrooms")
-        .select("id, name, creator_id, closed")
+        .select("id, name, creator_id, closed, privacy_type")
         .eq("privacy_type", "public")
         .eq("closed", false)
         .order("name", { ascending: true });
@@ -355,10 +583,10 @@ async function loadPublicRooms() {
         roomDiv.appendChild(enterButton);
 
         if (room.creator_id === myId) {
-            const manageButton = document.createElement("button");
-            manageButton.textContent = "Manage Chatroom";
-            manageButton.onclick = () => manageChatroom(room.id);
-            roomDiv.appendChild(manageButton);
+            const editButton = document.createElement("button");
+            editButton.textContent = "Edit";
+            editButton.onclick = () => toggleInlineRoomEditor(room, roomDiv);
+            roomDiv.appendChild(editButton);
         }
         roomList.appendChild(roomDiv);
     });
@@ -434,11 +662,11 @@ async function loadPrivateRooms() {
             roomDiv.appendChild(roomTitle);
             roomDiv.appendChild(enterButton);
             if (room.creator_id === myId) {
-                const manageButton = document.createElement("button");
-                manageButton.textContent = "Manage Chatroom";
-                manageButton.onclick = () => manageChatroom(room.id);
-                roomDiv.appendChild(manageButton);
-            } else {
+                const editButton = document.createElement("button");
+                editButton.textContent = "Edit";
+                editButton.onclick = () => toggleInlineRoomEditor(room, roomDiv);
+                roomDiv.appendChild(editButton);
+                } else {
                 const leaveButton = document.createElement("button");
                 leaveButton.textContent = "Leave Chatroom";
                 leaveButton.onclick = () => leaveChatroom(room.id);
