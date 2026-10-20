@@ -165,7 +165,7 @@ textarea, input[type="text"] {
   gap: 8px;
   padding: 4px 8px;
   transition: transform 0.1s ease;
-  font-size: medium; 
+  font-size: x-large; 
   font-family: font;
 }
 
