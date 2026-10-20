@@ -31,6 +31,7 @@ if (!link) {
    document.head.appendChild(link);
 }
 
+
 function toggleInlineRoomEditor(room, roomDiv) {
 
     document.querySelectorAll(".room-editor").forEach(editor => {
@@ -142,14 +143,14 @@ async function saveInlineChatroomEdits(room, roomDiv) {
         return;
     }
 
-    const { data: { session } } = await supabaser.auth.getSession();
+    const { data: { session } } = await sharedSupabase.auth.getSession();
 
     if (!session) {
         alert("Please log in first.");
         return;
     }
 
-    const { data: currentRoom, error: roomError } = await supabaser
+    const { data: currentRoom, error: roomError } = await sharedSupabase
         .from("chatrooms")
         .select("id, creator_id, privacy_type")
         .eq("id", room.id)
@@ -165,7 +166,7 @@ async function saveInlineChatroomEdits(room, roomDiv) {
         return;
     }
 
-    const { error } = await supabaser
+    const { error } = await sharedSupabase
         .from("chatrooms")
         .update({
             name: newName,
@@ -181,7 +182,7 @@ async function saveInlineChatroomEdits(room, roomDiv) {
 
     if (newPrivacy === "private") {
         const { data: membership, error: membershipError } =
-            await supabaser
+            await sharedSupabase
                 .from("chatroom_allowed_users")
                 .select("user_id")
                 .eq("chatroom_id", room.id)
@@ -195,7 +196,7 @@ async function saveInlineChatroomEdits(room, roomDiv) {
         }
 
         if (!membership) {
-            const { error: insertError } = await supabaser
+            const { error: insertError } = await sharedSupabase
                 .from("chatroom_allowed_users")
                 .insert({
                     chatroom_id: room.id,
@@ -220,14 +221,14 @@ async function saveInlineChatroomEdits(room, roomDiv) {
 }
 
 async function toggleInlineChatroomClosed(roomId, currentlyClosed) {
-    const { data: { session } } = await supabaser.auth.getSession();
+    const { data: { session } } = await sharedSupabase.auth.getSession();
 
     if (!session) {
         alert("Please log in first.");
         return;
     }
 
-    const { data: room, error: roomError } = await supabaser
+    const { data: room, error: roomError } = await sharedSupabase
         .from("chatrooms")
         .select("id, creator_id, privacy_type")
         .eq("id", roomId)
@@ -249,7 +250,7 @@ async function toggleInlineChatroomClosed(roomId, currentlyClosed) {
         return;
     }
 
-    const { error } = await supabaser
+    const { error } = await sharedSupabase
         .from("chatrooms")
         .update({ closed: !currentlyClosed })
         .eq("id", roomId);
@@ -451,7 +452,7 @@ async function loadFriendsForChatroom() {
 
     if (!friendList) return;
 
-    const { data: { session } } = await supabaser.auth.getSession();
+    const { data: { session } } = await sharedSupabase.auth.getSession();
 
     if (!session) {
         friendList.innerHTML = "<p>Please log in first.</p>";
@@ -460,7 +461,7 @@ async function loadFriendsForChatroom() {
 
     const myId = session.user.id;
 
-    const { data: relationships, error } = await supabaser
+    const { data: relationships, error } = await sharedSupabase
         .from("relationships")
         .select(`
             id,
@@ -523,7 +524,7 @@ async function loadPublicRooms() {
     const roomList = document.getElementById("public-rooms");
     if (!roomList) return;
 
-    const { data: { session } } = await supabaser.auth.getSession();
+    const { data: { session } } = await sharedSupabase.auth.getSession();
 
     if (!session) {
         roomList.textContent = "Please log in first.";
@@ -532,7 +533,7 @@ async function loadPublicRooms() {
 
     const myId = session.user.id;
 
-    const { data: rooms, error } = await supabaser
+    const { data: rooms, error } = await sharedSupabase
         .from("chatrooms")
         .select("id, name, creator_id, closed, privacy_type")
         .eq("privacy_type", "public")
@@ -545,7 +546,7 @@ async function loadPublicRooms() {
         return;
     }
 
-    const { data: bans, error: banError } = await supabaser
+    const { data: bans, error: banError } = await sharedSupabase
         .from("chatroom_allowed_users")
         .select("chatroom_id")
         .eq("user_id", myId)
@@ -600,7 +601,7 @@ async function loadPrivateRooms() {
     if (!roomList) return;
 
     const { data: { session } } =
-        await supabaser.auth.getSession();
+        await sharedSupabase.auth.getSession();
 
     if (!session) {
         roomList.innerHTML = "<p>Please log in first.</p>";
@@ -608,7 +609,7 @@ async function loadPrivateRooms() {
     }
 
     const myId = session.user.id;
-    const { data: memberships, error } = await supabaser
+    const { data: memberships, error } = await sharedSupabase
     .from("chatroom_allowed_users")
     .select(`
         chatroom_id,
@@ -682,7 +683,7 @@ async function loadDMs() {
     if (!roomList) return;
 
     const { data: { session } } =
-        await supabaser.auth.getSession();
+        await sharedSupabase.auth.getSession();
 
     if (!session) {
         roomList.innerHTML = "<p>Please log in first.</p>";
@@ -692,7 +693,7 @@ async function loadDMs() {
     const myId = session.user.id;
 
     const { data: memberships, error } =
-        await supabaser
+        await sharedSupabase
             .from("chatroom_allowed_users")
             .select(`
                 chatroom_id,
@@ -724,7 +725,7 @@ async function loadDMs() {
         const room = dmmembership.chatrooms;
         if (!room) continue;
         const { data: otherMembers, error: memberError } =
-        await supabaser
+        await sharedSupabase
             .from("chatroom_allowed_users")
             .select("user_id")
             .eq("chatroom_id", room.id);
@@ -741,7 +742,7 @@ let friendname = "Unknown User";
 
 if (otherUser) {
     const { data: profile } =
-        await supabaser
+        await sharedSupabase
             .from("profiles")
             .select("username")
             .eq("id", otherUser.user_id)
@@ -768,14 +769,14 @@ roomList.appendChild(roomDiv);
 }};
 
 async function leaveChatroom(roomId) {
-    const { data: { session } } = await supabaser.auth.getSession();
+    const { data: { session } } = await sharedSupabase.auth.getSession();
 
     if (!session) {
         alert("Please log in first!");
         return;
     }
 
-    const { data: room, error: roomError } = await supabaser
+    const { data: room, error: roomError } = await sharedSupabase
         .from("chatrooms")
         .select("id, privacy_type, creator_id")
         .eq("id", roomId)
@@ -800,7 +801,7 @@ async function leaveChatroom(roomId) {
         return;
     }
 
-    const { error } = await supabaser
+    const { error } = await sharedSupabase
         .from("chatroom_allowed_users")
         .delete()
         .eq("chatroom_id", roomId)
@@ -819,14 +820,14 @@ async function leaveChatroom(roomId) {
 
 async function editChatroom(roomId) {
     const { data: { session } } =
-        await supabaser.auth.getSession();
+        await sharedSupabase.auth.getSession();
 
     if (!session) {
         alert("Please log in first!");
         return;
     }
 
-    const { data: room, error } = await supabaser
+    const { data: room, error } = await sharedSupabase
         .from("chatrooms")
         .select("id, name, creator_id, privacy_type")
         .eq("id", roomId)
@@ -907,7 +908,7 @@ async function editChatroom(roomId) {
 
 async function saveChatroomEdits(roomId) {
     const { data: { session } } =
-        await supabaser.auth.getSession();
+        await sharedSupabase.auth.getSession();
 
     if (!session) {
         alert("Please log in first!");
@@ -932,7 +933,7 @@ async function saveChatroomEdits(roomId) {
     }
 
     const { data: room, error: roomError } =
-        await supabaser
+        await sharedSupabase
             .from("chatrooms")
             .select("creator_id")
             .eq("id", roomId)
@@ -948,7 +949,7 @@ async function saveChatroomEdits(roomId) {
         return;
     }
 
-    const { error } = await supabaser
+    const { error } = await sharedSupabase
         .from("chatrooms")
         .update({
             name: newName,
@@ -972,7 +973,7 @@ async function saveChatroomEdits(roomId) {
 }
 async function manageMembers(roomId) {
     const { data: { session } } =
-        await supabaser.auth.getSession();
+        await sharedSupabase.auth.getSession();
 
     if (!session) {
         alert("Please log in first!");
@@ -980,7 +981,7 @@ async function manageMembers(roomId) {
     }
 
     const { data: room, error: roomError } =
-        await supabaser
+        await sharedSupabase
             .from("chatrooms")
             .select("id, name, creator_id, privacy_type")
             .eq("id", roomId)
@@ -1046,12 +1047,12 @@ async function loadChatroomMembers(room) {
     if (!memberList) return;
 
     const { data: { session } } =
-        await supabaser.auth.getSession();
+        await sharedSupabase.auth.getSession();
 
     if (!session) return;
 
     const { data: members, error } =
-        await supabaser
+        await sharedSupabase
             .from("chatroom_allowed_users")
             .select("user_id")
             .eq("chatroom_id", room.id);
@@ -1074,7 +1075,7 @@ async function loadChatroomMembers(room) {
     for (const member of members) {
 
         const { data: profile } =
-            await supabaser
+            await sharedSupabase
                 .from("profiles")
                 .select("username")
                 .eq("id", member.user_id)
@@ -1116,7 +1117,7 @@ async function loadChatroomMembers(room) {
 }
 async function removeChatroomMember(roomId, userId) {
     const { data: { session } } =
-        await supabaser.auth.getSession();
+        await sharedSupabase.auth.getSession();
 
     if (!session) {
         alert("Please log in first!");
@@ -1128,7 +1129,7 @@ async function removeChatroomMember(roomId, userId) {
     }
 
     const { data: room, error: roomError } =
-        await supabaser
+        await sharedSupabase
             .from("chatrooms")
             .select("creator_id")
             .eq("id", roomId)
@@ -1150,7 +1151,7 @@ async function removeChatroomMember(roomId, userId) {
     }
 
     const { error } =
-        await supabaser
+        await sharedSupabase
             .from("chatroom_allowed_users")
             .delete()
             .eq("chatroom_id", roomId)
@@ -1169,7 +1170,7 @@ async function removeChatroomMember(roomId, userId) {
 }
 async function addChatroomMember(roomId) {
     const { data: { session } } =
-        await supabaser.auth.getSession();
+        await sharedSupabase.auth.getSession();
 
     if (!session) {
         alert("Please log in first!");
@@ -1177,7 +1178,7 @@ async function addChatroomMember(roomId) {
     }
 
     const { data: room, error: roomError } =
-        await supabaser
+        await sharedSupabase
             .from("chatrooms")
             .select("id, name, creator_id, privacy_type")
             .eq("id", roomId)
@@ -1194,7 +1195,7 @@ async function addChatroomMember(roomId) {
     }
 
     const { data: relationships, error } =
-        await supabaser
+        await sharedSupabase
             .from("relationships")
             .select(`
                 id_1,
@@ -1214,7 +1215,7 @@ async function addChatroomMember(roomId) {
     }
 
     const { data: currentMembers } =
-        await supabaser
+        await sharedSupabase
             .from("chatroom_allowed_users")
             .select("user_id")
             .eq("chatroom_id", roomId);
@@ -1270,7 +1271,7 @@ async function addChatroomMember(roomId) {
     }
 
     const { error: insertError } =
-        await supabaser
+        await sharedSupabase
             .from("chatroom_allowed_users")
             .insert({
                 chatroom_id: roomId,
@@ -1297,14 +1298,14 @@ function openChatroom(roomId) {
 }
 async function manageChatroom(roomId) {
     const { data: { session } } =
-        await supabaser.auth.getSession();
+        await sharedSupabase.auth.getSession();
 
     if (!session) {
         alert("Please log in first!");
         return;
     }
 
-    const { data: room, error } = await supabaser
+    const { data: room, error } = await sharedSupabase
         .from("chatrooms")
         .select("id, name, creator_id, privacy_type, closed")
         .eq("id", roomId)
@@ -1388,7 +1389,7 @@ function showChatroomManagement(room) {
 async function toggleChatroomClosed(roomId, currentlyClosed) {
 
     const { data: { session } } =
-        await supabaser.auth.getSession();
+        await sharedSupabase.auth.getSession();
 
     if (!session) {
         alert("Please log in first!");
@@ -1404,7 +1405,7 @@ async function toggleChatroomClosed(roomId, currentlyClosed) {
     if (!confirmed) return;
 
     const { data: room, error: roomError } =
-        await supabaser
+        await sharedSupabase
             .from("chatrooms")
             .select("id, creator_id, closed")
             .eq("id", roomId)
@@ -1421,7 +1422,7 @@ async function toggleChatroomClosed(roomId, currentlyClosed) {
         return;
     }
 
-    const { error } = await supabaser
+    const { error } = await sharedSupabase
         .from("chatrooms")
         .update({
             closed: !currentlyClosed
@@ -1441,7 +1442,7 @@ async function loadArchivedRooms() {
     const roomList = document.getElementById("archived-rooms");
     if (!roomList) return;
 
-    const { data: { session } } = await supabaser.auth.getSession();
+    const { data: { session } } = await sharedSupabase.auth.getSession();
 
     if (!session) {
         roomList.textContent = "Please log in first.";
@@ -1450,7 +1451,7 @@ async function loadArchivedRooms() {
 
     const myId = session.user.id;
 
-    const { data: bans, error: banError } = await supabaser
+    const { data: bans, error: banError } = await sharedSupabase
         .from("chatroom_allowed_users")
         .select("chatroom_id")
         .eq("user_id", myId)
@@ -1465,7 +1466,7 @@ async function loadArchivedRooms() {
     const bannedRoomIds = new Set(
         (bans || []).map(ban => ban.chatroom_id)
     );
-    const { data: publicRooms, error: publicError } = await supabaser
+    const { data: publicRooms, error: publicError } = await sharedSupabase
         .from("chatrooms")
         .select("id, name, creator_id, privacy_type, closed")
         .eq("privacy_type", "public")
@@ -1478,7 +1479,7 @@ async function loadArchivedRooms() {
         return;
     }
 
-    const { data: privateRooms, error: privateError } = await supabaser
+    const { data: privateRooms, error: privateError } = await sharedSupabase
         .from("chatrooms")
         .select("id, name, creator_id, privacy_type, closed")
         .eq("privacy_type", "private")
@@ -1539,7 +1540,7 @@ async function loadArchivedRooms() {
 async function createChatroom() {
 
     const { data: { session } } =
-        await supabaser.auth.getSession();
+        await sharedSupabase.auth.getSession();
 
     if (!session) {
         alert("Please log in first!");
@@ -1568,7 +1569,7 @@ async function createChatroom() {
         "chat_" + crypto.randomUUID();
 
     const { error: roomError } =
-        await supabaser
+        await sharedSupabase
             .from("chatrooms")
             .insert({
                 id: roomId,
@@ -1613,7 +1614,7 @@ async function createChatroom() {
             }));
 
         const { error: membershipError } =
-            await supabaser
+            await sharedSupabase
                 .from("chatroom_allowed_users")
                 .insert(membershipRows);
 
@@ -1624,7 +1625,7 @@ async function createChatroom() {
                 membershipError
             );
 
-            await supabaser
+            await sharedSupabase
                 .from("chatrooms")
                 .delete()
                 .eq("id", roomId);
