@@ -32,11 +32,14 @@ if (!link) {
 }
 
 
-function toggleInlineRoomEditor(room, roomDiv) {
 
+function toggleInlineRoomEditor(room, roomDiv) {
     document.querySelectorAll(".room-editor").forEach(editor => {
-        editor.classList.remove("open");
         editor.remove();
+    });
+
+    document.querySelectorAll(".chatroom-entry").forEach(entry => {
+        delete entry.dataset.editorOpen;
     });
 
     if (roomDiv.dataset.editorOpen === "true") {
@@ -52,17 +55,89 @@ function toggleInlineRoomEditor(room, roomDiv) {
     const fields = document.createElement("div");
     fields.className = "room-edit-fields";
 
-    const nameLabel = document.createElement("label");
-    nameLabel.textContent = "Change name: ";
+    function makeTextField(labelText, placeholder, dataAttribute, value = "") {
+        const label = document.createElement("label");
+        label.textContent = labelText;
 
-    const nameInput = document.createElement("input");
-    nameInput.type = "text";
-    nameInput.maxLength = 50;
-    nameInput.value = room.name;
-    nameInput.dataset.editRoomName = "";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = placeholder;
+        input.value = value;
+        input.dataset[dataAttribute] = "";
+        input.autocomplete = "off";
 
-    nameLabel.appendChild(nameInput);
-    fields.appendChild(nameLabel);
+        label.appendChild(input);
+        fields.appendChild(label);
+        return input;
+    }
+
+    makeTextField(
+        "Change name:",
+        "New chatroom name",
+        "editRoomName",
+        room.name
+    ).maxLength = 50;
+
+    
+    const addInput = makeTextField(
+        "Add Member:",
+        "Enter username to add",
+        "addMemberUsername"
+    );
+
+    const removeInput = makeTextField(
+        "Remove Member:",
+        "Enter username to remove",
+        "removeMemberUsername"
+    );
+
+    function addMemberAction(input, labelText, action) {
+        const label = input.parentElement;
+        label.classList.add("member-field");
+    
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = labelText;
+        button.onclick = async () => {
+            const username = input.value.trim();
+    
+            if (!username) {
+                alert("Please enter a username.");
+                input.focus();
+                return;
+            }
+    
+            button.disabled = true;
+    
+            try {
+                const result = await changePrivateRoomMember(
+                    room.id,
+                    username,
+                    action,
+                    (await sharedSupabase.auth.getSession()).data.session?.user.id
+                );
+    
+                if (!result.ok) {
+                    alert(result.message);
+                    return;
+                }
+    
+                alert(result.message);
+                input.value = "";
+            } catch (error) {
+                console.error("Member update failed:", error);
+                alert("Could not update the member. Please try again.");
+            } finally {
+                button.disabled = false;
+            }
+        };
+    
+        label.appendChild(button);
+    }
+
+    addMemberAction(addInput, "Add", "add");
+    addMemberAction(removeInput, "Remove", "remove");
+
 
     const privacyField = document.createElement("fieldset");
     const legend = document.createElement("legend");
@@ -81,7 +156,7 @@ function toggleInlineRoomEditor(room, roomDiv) {
         label.appendChild(radio);
         label.appendChild(
             document.createTextNode(
-                type === "public" ? " Public" : " Private"
+                type === "public" ? " Public " : " Private "
             )
         );
 
@@ -90,47 +165,49 @@ function toggleInlineRoomEditor(room, roomDiv) {
 
     fields.appendChild(privacyField);
 
-    const saveButton = document.createElement("button");
-    saveButton.textContent = "Save Changes";
-    saveButton.onclick = () => saveInlineChatroomEdits(room, roomDiv);
-
-    fields.appendChild(saveButton);
-
-    const memberButton = document.createElement("button");
-    memberButton.textContent = "Manage Members";
-    memberButton.onclick = () => manageMembers(room.id);
-
-    fields.appendChild(memberButton);
-
-    const status = document.createElement("div");
-    status.className = "room-edit-status";
+    const actions = document.createElement("div");
+    actions.className = "room-edit-status";
 
     const statusButton = document.createElement("button");
     statusButton.textContent = room.closed
-        ? "Reopen Chatroom?"
-        : "Close Chatroom?";
+        ? "Reopen Chatroom"
+        : "Close Chatroom";
 
     statusButton.onclick = () =>
         toggleInlineChatroomClosed(room.id, room.closed);
 
-    status.appendChild(statusButton);
+    const saveButton = document.createElement("button");
+    saveButton.textContent = "Save";
+    saveButton.onclick = () => saveInlineChatroomEdits(room, roomDiv);
+
+    actions.appendChild(statusButton);
+    actions.appendChild(saveButton);
+
+    const statusMessage = document.createElement("p");
+    statusMessage.className = "room-edit-message";
+    statusMessage.setAttribute("aria-live", "polite");
+    actions.appendChild(statusMessage);
 
     editor.appendChild(fields);
-    editor.appendChild(status);
+    editor.appendChild(actions);
     roomDiv.appendChild(editor);
-
-    requestAnimationFrame(() => {
-        editor.classList.add("open");
-    });
 }
+
+
 
 async function saveInlineChatroomEdits(room, roomDiv) {
     const nameInput = roomDiv.querySelector("[data-edit-room-name]");
+    const addInput = roomDiv.querySelector("[data-add-member-username]");
+    const removeInput = roomDiv.querySelector("[data-remove-member-username]");
     const privacyInput = roomDiv.querySelector(
         `input[name="privacy-${room.id}"]:checked`
     );
+    const message = roomDiv.querySelector(".room-edit-message");
+    const saveButton = roomDiv.querySelector(".room-edit-status button:last-of-type");
 
     const newName = nameInput?.value.trim();
+    const addUsername = addInput?.value.trim();
+    const removeUsername = removeInput?.value.trim();
     const newPrivacy = privacyInput?.value;
 
     if (!newName) {
@@ -143,6 +220,11 @@ async function saveInlineChatroomEdits(room, roomDiv) {
         return;
     }
 
+    if (newPrivacy !== "private" && (addUsername || removeUsername)) {
+        alert("Member management is only available for private chatrooms. Clear the member fields or keep the room private.");
+        return;
+    }
+
     const { data: { session } } = await sharedSupabase.auth.getSession();
 
     if (!session) {
@@ -152,7 +234,7 @@ async function saveInlineChatroomEdits(room, roomDiv) {
 
     const { data: currentRoom, error: roomError } = await sharedSupabase
         .from("chatrooms")
-        .select("id, creator_id, privacy_type")
+        .select("id, creator_id")
         .eq("id", room.id)
         .single();
 
@@ -166,59 +248,258 @@ async function saveInlineChatroomEdits(room, roomDiv) {
         return;
     }
 
-    const { error } = await sharedSupabase
-        .from("chatrooms")
-        .update({
-            name: newName,
-            privacy_type: newPrivacy
-        })
-        .eq("id", room.id);
+    if (saveButton) saveButton.disabled = true;
+    if (message) message.textContent = "Saving...";
 
-    if (error) {
-        console.error("Could not update chatroom:", error);
-        alert("Could not save changes: " + error.message);
-        return;
-    }
+    try {
+        const { error: updateError } = await sharedSupabase
+            .from("chatrooms")
+            .update({
+                name: newName,
+                privacy_type: newPrivacy
+            })
+            .eq("id", room.id);
 
-    if (newPrivacy === "private") {
-        const { data: membership, error: membershipError } =
-            await sharedSupabase
-                .from("chatroom_allowed_users")
-                .select("user_id")
-                .eq("chatroom_id", room.id)
-                .eq("user_id", session.user.id)
-                .eq("status", "member")
-                .maybeSingle();
+        if (updateError) throw updateError;
 
-        if (membershipError) {
-            alert("The room was updated, but owner membership could not be checked.");
+        // Ensure the owner has a membership row when the room is private.
+        if (newPrivacy === "private") {
+            const { data: ownerMembership, error: ownerCheckError } =
+                await sharedSupabase
+                    .from("chatroom_allowed_users")
+                    .select("user_id")
+                    .eq("chatroom_id", room.id)
+                    .eq("user_id", session.user.id)
+                    .maybeSingle();
+
+            if (ownerCheckError) throw ownerCheckError;
+
+            if (!ownerMembership) {
+                const { error: ownerInsertError } = await sharedSupabase
+                    .from("chatroom_allowed_users")
+                    .insert({
+                        chatroom_id: room.id,
+                        user_id: session.user.id,
+                        last_read_sequence: 0,
+                        status: "member"
+                    });
+
+                if (ownerInsertError) throw ownerInsertError;
+            }
+        }
+
+        const changes = [];
+
+        if (addUsername) {
+            changes.push(
+                await changePrivateRoomMember(
+                    room.id, addUsername, "add", session.user.id
+                )
+            );
+        }
+
+        if (removeUsername) {
+            changes.push(
+                await changePrivateRoomMember(
+                    room.id, removeUsername, "remove", session.user.id
+                )
+            );
+        }
+
+        const failures = changes.filter(result => !result.ok);
+
+        if (failures.length) {
+            const details = failures.map(result => result.message).join("\n");
+            alert(
+                "The chatroom settings were saved, but a member change failed:\n" +
+                details
+            );
             return;
         }
 
-        if (!membership) {
+        alert("Chatroom and member changes saved!");
+
+        showTab(newPrivacy === "private" ? "private" : "public");
+    } catch (error) {
+        console.error("Could not save chatroom changes:", error);
+        alert("Could not save changes: " + error.message);
+    } finally {
+        if (saveButton) saveButton.disabled = false;
+        if (message) message.textContent = "";
+    }
+}
+
+
+async function changePrivateRoomMember(roomId, username, action, ownerId) {
+    const { data: profile, error: profileError } = await sharedSupabase
+        .from("profiles")
+        .select("id, username")
+        .ilike("username", username)
+        .maybeSingle();
+
+    if (profileError) {
+        return { ok: false, message: `Could not look up "${username}".` };
+    }
+
+    if (!profile) {
+        return { ok: false, message: `Username "${username}" was not found.` };
+    }
+
+    if (profile.id === ownerId) {
+        return {
+            ok: false,
+            message: "You cannot add or remove yourself as a member."
+        };
+    }
+
+    const { data: room, error: roomError } = await sharedSupabase
+        .from("chatrooms")
+        .select("creator_id, privacy_type")
+        .eq("id", roomId)
+        .single();
+
+    if (roomError || !room) {
+        return { ok: false, message: "Could not find the chatroom." };
+    }
+
+    if (room.creator_id !== ownerId) {
+        return { ok: false, message: "Only the owner can manage members." };
+    }
+
+    if (room.privacy_type !== "private") {
+        return {
+            ok: false,
+            message: "Members can only be managed in private chatrooms."
+        };
+    }
+
+    if (action === "add") {
+        // Keep the existing rule: only friends can be added.
+        const { data: friendship, error: friendshipError } =
+            await sharedSupabase
+                .from("relationships")
+                .select("id")
+                .eq("status", "friends")
+                .or(
+                    `and(id_1.eq.${ownerId},id_2.eq.${profile.id}),and(id_1.eq.${profile.id},id_2.eq.${ownerId})`
+                )
+                .maybeSingle();
+
+        if (friendshipError) {
+            return {
+                ok: false,
+                message: `Could not check whether "${username}" is your friend.`
+            };
+        }
+
+        if (!friendship) {
+            return {
+                ok: false,
+                message: `"${username}" must be your friend before you can add them.`
+            };
+        }
+
+        const { data: existing, error: existingError } =
+            await sharedSupabase
+                .from("chatroom_allowed_users")
+                .select("user_id, status")
+                .eq("chatroom_id", roomId)
+                .eq("user_id", profile.id)
+                .maybeSingle();
+
+        if (existingError) {
+            return {
+                ok: false,
+                message: `Could not check "${username}"'s membership.`
+            };
+        }
+
+        if (existing) {
+            if (existing.status === "banned") {
+                return {
+                    ok: false,
+                    message: `"${username}" is banned from this chatroom.`
+                };
+            }
+
+            if (existing.status === "member" || !existing.status) {
+                return {
+                    ok: false,
+                    message: `"${username}" is already a member.`
+                };
+            }
+
+            // Reactivate an existing non-member row, if your schema uses statuses.
+            const { error: reactivateError } = await sharedSupabase
+                .from("chatroom_allowed_users")
+                .update({ status: "member" })
+                .eq("chatroom_id", roomId)
+                .eq("user_id", profile.id);
+
+            if (reactivateError) {
+                return { ok: false, message: reactivateError.message };
+            }
+        } else {
             const { error: insertError } = await sharedSupabase
                 .from("chatroom_allowed_users")
                 .insert({
-                    chatroom_id: room.id,
-                    user_id: session.user.id,
+                    chatroom_id: roomId,
+                    user_id: profile.id,
                     last_read_sequence: 0,
                     status: "member"
                 });
 
             if (insertError) {
-                console.error("Could not add owner membership:", insertError);
-                alert(
-                    "The room privacy changed, but the owner membership could not be added. Check your Supabase policies."
-                );
-                return;
+                return { ok: false, message: insertError.message };
             }
         }
+
+        return { ok: true, message: `"${username}" added.` };
     }
 
-    alert("Chatroom updated!");
+    if (action === "remove") {
+        if (profile.id === room.creator_id) {
+            return { ok: false, message: "The owner cannot be removed." };
+        }
 
-    showTab(newPrivacy === "private" ? "private" : "public");
+        const { data: membership, error: membershipError } =
+            await sharedSupabase
+                .from("chatroom_allowed_users")
+                .select("user_id")
+                .eq("chatroom_id", roomId)
+                .eq("user_id", profile.id)
+                .maybeSingle();
+
+        if (membershipError) {
+            return {
+                ok: false,
+                message: `Could not check "${username}"'s membership.`
+            };
+        }
+
+        if (!membership) {
+            return {
+                ok: false,
+                message: `"${username}" is not a member of this chatroom.`
+            };
+        }
+
+        const { error: deleteError } = await sharedSupabase
+            .from("chatroom_allowed_users")
+            .delete()
+            .eq("chatroom_id", roomId)
+            .eq("user_id", profile.id);
+
+        if (deleteError) {
+            return { ok: false, message: deleteError.message };
+        }
+
+        return { ok: true, message: `"${username}" removed.` };
+    }
+
+    return { ok: false, message: "Unknown member action." };
 }
+
 
 async function toggleInlineChatroomClosed(roomId, currentlyClosed) {
     const { data: { session } } = await sharedSupabase.auth.getSession();
