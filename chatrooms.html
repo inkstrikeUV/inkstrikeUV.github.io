@@ -520,6 +520,40 @@ async function loadFriendsForChatroom() {
 friendList.appendChild(label);
 });
 }
+
+
+function createRoomHeading(room, myId, titleText = room.name, allowEdit = true) {
+    const top = document.createElement("div");
+    top.className = "room-top";
+
+    const title = document.createElement("h3");
+    title.className = "chatroom-name";
+    title.textContent = titleText;
+    title.tabIndex = 0;
+    title.setAttribute("role", "link");
+    title.title = "Open chatroom";
+
+    title.onclick = () => openChatroom(room.id);
+
+    title.onkeydown = event => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openChatroom(room.id);
+        }
+    };
+
+    top.appendChild(title);
+
+    if (allowEdit && room.creator_id === myId) {
+        const editButton = document.createElement("button");
+        editButton.textContent = "Edit";
+        editButton.onclick = () => toggleInlineRoomEditor(room, top.parentElement);
+        top.appendChild(editButton);
+    }
+
+    return top;
+}
+
 async function loadPublicRooms() {
     const roomList = document.getElementById("public-rooms");
     if (!roomList) return;
@@ -572,25 +606,14 @@ async function loadPublicRooms() {
         return;
     }
 
+    
     visibleRooms.forEach(room => {
         const roomDiv = document.createElement("div");
         roomDiv.className = "chatroom-entry";
-        const roomTitle = document.createElement("h3");
-        roomTitle.textContent = room.name;
-        roomDiv.appendChild(roomTitle);
-        const enterButton = document.createElement("button");
-        enterButton.textContent = "Enter Chatroom";
-        enterButton.onclick = () => openChatroom(room.id);
-        roomDiv.appendChild(enterButton);
-
-        if (room.creator_id === myId) {
-            const editButton = document.createElement("button");
-            editButton.textContent = "Edit";
-            editButton.onclick = () => toggleInlineRoomEditor(room, roomDiv);
-            roomDiv.appendChild(editButton);
-        }
+        roomDiv.appendChild(createRoomHeading(room, myId));
         roomList.appendChild(roomDiv);
     });
+
 }
 
 
@@ -647,34 +670,22 @@ async function loadPrivateRooms() {
     roomList.innerHTML = "";
 
     privmemberships.forEach(privmembership => {
-
         const room = privmembership.chatrooms;
-
         if (!room) return;
 
         const roomDiv = document.createElement("div");
-
         roomDiv.className = "chatroom-entry";
-            const roomTitle = document.createElement("h3");
-            roomTitle.textContent = room.name;
-            const enterButton = document.createElement("button");
-            enterButton.textContent = "Enter Chatroom";
-            enterButton.onclick = () => openChatroom(room.id);
-            roomDiv.appendChild(roomTitle);
-            roomDiv.appendChild(enterButton);
-            if (room.creator_id === myId) {
-                const editButton = document.createElement("button");
-                editButton.textContent = "Edit";
-                editButton.onclick = () => toggleInlineRoomEditor(room, roomDiv);
-                roomDiv.appendChild(editButton);
-                } else {
-                const leaveButton = document.createElement("button");
-                leaveButton.textContent = "Leave Chatroom";
-                leaveButton.onclick = () => leaveChatroom(room.id);
-                roomDiv.appendChild(leaveButton);
-            }
-            roomList.appendChild(roomDiv);
-            });
+        roomDiv.appendChild(createRoomHeading(room, myId));
+        if (room.creator_id !== myId) {
+            const leaveButton = document.createElement("button");
+            leaveButton.textContent = "Leave Chatroom";
+            leaveButton.onclick = () => leaveChatroom(room.id);
+            roomDiv.appendChild(leaveButton);
+        }
+
+        roomList.appendChild(roomDiv);
+    });
+
         }
 async function loadDMs() {
 
@@ -753,19 +764,16 @@ if (otherUser) {
     }
 }
 
+
 const roomDiv = document.createElement("div");
 roomDiv.className = "chatroom-entry";
 
-const roomTitle = document.createElement("h3");
-roomTitle.textContent = friendname;
+roomDiv.appendChild(
+    createRoomHeading(room, myId, friendname, false)
+);
 
-const enterButton = document.createElement("button");
-enterButton.textContent = "Enter Chatroom";
-enterButton.onclick = () => openChatroom(room.id);
-
-roomDiv.appendChild(roomTitle);
-roomDiv.appendChild(enterButton);
 roomList.appendChild(roomDiv);
+
 }};
 
 async function leaveChatroom(roomId) {
@@ -888,7 +896,7 @@ async function editChatroom(roomId) {
     const breakFour = document.createElement("br");
 
     const saveButton = document.createElement("button");
-    saveButton.textContent = "Save Changes";
+    saveButton.textContent = "Save";
     saveButton.onclick = () => saveChatroomEdits(room.id);
 
     const cancelButton = document.createElement("button");

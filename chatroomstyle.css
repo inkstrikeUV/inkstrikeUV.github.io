@@ -572,3 +572,90 @@ html {
         --header-height: 64px;
     }
 }
+
+/* Clickable room name */
+.room-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.room-top .chatroom-name {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+}
+
+.room-top .chatroom-name:hover {
+    text-decoration: underline;
+}
+
+.room-top button {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+/* Notes and room cards */
+/* LIGHT PURPLE HEX GOES HERE */
+.chatroom-entry {
+    background-color: #EDE4FA;
+
+    /* GREY BORDER HEX GOES HERE */
+    border: 1px solid #B8B8C2;
+
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+}
+
+/* Fit the page below the fixed shared header */
+html {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    height: 100vh;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 80px 0 0;
+    overflow: hidden;
+}
+
+.chat-layout {
+    height: calc(100vh - 80px);
+    min-height: 0;
+    box-sizing: border-box;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.chat-sidebar,
+#chat-content {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+@media (max-width: 650px) {
+    .chat-layout {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+        height: calc(100vh - 64px);
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .chat-sidebar {
+        max-height: 140px;
+        overflow-y: auto;
+    }
+
+    #chat-content {
+        padding: 12px;
+    }
+}
