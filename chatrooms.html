@@ -225,7 +225,6 @@ async function saveInlineChatroomEdits(room, roomDiv) {
 
         if (updateError) throw updateError;
 
-        // Ensure the owner has a membership row when the room is private.
         if (newPrivacy === "private") {
             const { data: ownerMembership, error: ownerCheckError } =
                 await sharedSupabase
@@ -392,7 +391,6 @@ async function changePrivateRoomMember(roomId, username, action, ownerId) {
                 };
             }
 
-            // Reactivate an existing non-member row, if your schema uses statuses.
             const { error: reactivateError } = await sharedSupabase
                 .from("chatroom_allowed_users")
                 .update({ status: "member" })

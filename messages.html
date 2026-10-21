@@ -219,6 +219,13 @@ async function getUserProfile(userId) {
 
 
 async function appendMessage(msg, targetBox = chatBox, scroll = true) {
+  if (
+    targetBox === chatBox &&
+    [...chatBox.querySelectorAll('.message')]
+      .some(el => el.dataset.messageId === String(msg.id))
+  ) {
+    return;
+  }
    const senderProfile = await getUserProfile(msg.sender_id);
 
 
