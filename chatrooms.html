@@ -141,6 +141,7 @@ function toggleInlineRoomEditor(room, roomDiv) {
 
     const saveButton = document.createElement("button");
     saveButton.textContent = "Save";
+    saveButton.dataset.roomId = room.id;
     saveButton.onclick = () => saveInlineChatroomEdits(room, roomDiv);
 
     actions.appendChild(statusButton);
@@ -291,6 +292,124 @@ async function saveInlineChatroomEdits(room, roomDiv) {
     }
 }
 
+
+async function changePublicRoomBan(roomId, username, action, ownerId) {
+    const { data: profile, error: profileError } =
+        await sharedSupabase
+            .from("profiles")
+            .select("id, username")
+            .ilike("username", username)
+            .maybeSingle();
+
+    if (profileError || !profile) {
+        return {
+            ok: false,
+            message: `Could not find username "${username}".`
+        };
+    }
+
+    if (profile.id === ownerId) {
+        return {
+            ok: false,
+            message: "You cannot ban or unban yourself."
+        };
+    }
+
+    const { data: room, error: roomError } =
+        await sharedSupabase
+            .from("chatrooms")
+            .select("id, creator_id, privacy_type")
+            .eq("id", roomId)
+            .single();
+
+    if (roomError || !room) {
+        return { ok: false, message: "Could not find the chatroom." };
+    }
+
+    if (room.creator_id !== ownerId) {
+        return { ok: false, message: "Only the owner can manage bans." };
+    }
+
+    if (room.privacy_type !== "public") {
+        return {
+            ok: false,
+            message: "Ban management is only for public chatrooms."
+        };
+    }
+
+    const { data: existing, error: existingError } =
+        await sharedSupabase
+            .from("chatroom_allowed_users")
+            .select("user_id, status")
+            .eq("chatroom_id", roomId)
+            .eq("user_id", profile.id)
+            .maybeSingle();
+
+    if (existingError) {
+        return {
+            ok: false,
+            message: "Could not check the user's current status."
+        };
+    }
+
+    if (action === "ban") {
+        if (existing?.status === "banned") {
+            return {
+                ok: false,
+                message: `${username} is already banned.`
+            };
+        }
+
+        let result;
+
+        if (existing) {
+            result = await sharedSupabase
+                .from("chatroom_allowed_users")
+                .update({ status: "banned" })
+                .eq("chatroom_id", roomId)
+                .eq("user_id", profile.id);
+        } else {
+            result = await sharedSupabase
+                .from("chatroom_allowed_users")
+                .insert({
+                    chatroom_id: roomId,
+                    user_id: profile.id,
+                    last_read_sequence: 0,
+                    status: "banned"
+                });
+        }
+
+        if (result.error) {
+            return { ok: false, message: result.error.message };
+        }
+
+        return { ok: true, message: `${username} has been banned.` };
+    }
+
+    if (action === "unban") {
+        if (!existing || existing.status !== "banned") {
+            return {
+                ok: false,
+                message: `${username} is not currently banned.`
+            };
+        }
+
+        const { error } = await sharedSupabase
+            .from("chatroom_allowed_users")
+            .delete()
+            .eq("chatroom_id", roomId)
+            .eq("user_id", profile.id)
+            .eq("status", "banned");
+
+        if (error) {
+            return { ok: false, message: error.message };
+        }
+
+        return { ok: true, message: `${username} has been unbanned.` };
+    }
+
+    return { ok: false, message: "Unknown ban action." };
+}
 
 async function changePrivateRoomMember(roomId, username, action, ownerId) {
     const { data: profile, error: profileError } = await sharedSupabase
@@ -460,6 +579,7 @@ async function changePrivateRoomMember(roomId, username, action, ownerId) {
 
     return { ok: false, message: "Unknown member action." };
 }
+
 function addMemberAction(input, buttonText, action) {
     const button = document.createElement("button");
     button.type = "button";
@@ -476,9 +596,10 @@ function addMemberAction(input, buttonText, action) {
         const roomDiv = input.closest(".chatroom-entry");
         const message = roomDiv?.querySelector(".room-edit-message");
 
-        if (message) message.textContent = "Processing...";
-
         try {
+            button.disabled = true;
+            if (message) message.textContent = "Processing...";
+
             const { data: { session } } =
                 await sharedSupabase.auth.getSession();
 
@@ -487,30 +608,58 @@ function addMemberAction(input, buttonText, action) {
                 return;
             }
 
-            const { data: room, error } = await sharedSupabase
-                .from("chatrooms")
-                .select("id, creator_id, privacy_type")
-                .eq("id", input.closest(".chatroom-entry")
-                    ?.querySelector(".chatroom-name")
-                    ?.dataset.roomId || "")
-                .maybeSingle();
-
-            if (error) throw error;
-
-            alert(
-                `The ${action} action needs to be connected to ` +
-                `the room's member-management handler.`
+            const saveButton = roomDiv?.querySelector(
+                ".room-edit-status button:last-of-type"
             );
+
+            if (!roomDiv || !saveButton) {
+                throw new Error("Could not identify the chatroom.");
+            }
+            const roomId = saveButton.dataset.roomId;
+
+            if (!roomId) {
+                throw new Error(
+                    "Room ID missing. Update the Save button as shown below."
+                );
+            }
+
+            let result;
+
+            if (action === "add" || action === "remove") {
+                result = await changePrivateRoomMember(
+                    roomId,
+                    username,
+                    action,
+                    session.user.id
+                );
+            } else {
+                result = await changePublicRoomBan(
+                    roomId,
+                    username,
+                    action,
+                    session.user.id
+                );
+            }
+
+            if (!result.ok) {
+                alert(result.message);
+                return;
+            }
+
+            alert(result.message);
+            input.value = "";
         } catch (error) {
-            console.error(error);
-            alert("Could not process the member action.");
+            console.error("Member action failed:", error);
+            alert("Could not complete the action: " + error.message);
         } finally {
+            button.disabled = false;
             if (message) message.textContent = "";
         }
     };
 
     input.parentElement.appendChild(button);
 }
+
 
 
 async function toggleInlineChatroomClosed(roomId, currentlyClosed) {
@@ -849,7 +998,7 @@ function createRoomHeading(room, myId, titleText = room.name, allowEdit = true) 
 
 
 async function getRoomNotificationPreference(roomId, userId, privacy) {
-  const { data, error } = await supabase
+  const { data, error } = await sharedSupabase
     .from("chatroom_notifications")
     .select("enabled")
     .eq("chatroom_id", roomId)
@@ -885,7 +1034,7 @@ async function toggleRoomNotifications(roomId, userId, privacy, button) {
 
     const newEnabled = !currentEnabled;
 
-    const { data: existing, error: lookupError } = await supabase
+    const { data: existing, error: lookupError } = await sharedSupabase
       .from("chatroom_notifications")
       .select("chatroom_id")
       .eq("chatroom_id", roomId)
@@ -895,7 +1044,7 @@ async function toggleRoomNotifications(roomId, userId, privacy, button) {
     if (lookupError) throw lookupError;
 
     if (existing) {
-      const { error } = await supabase
+      const { error } = await sharedSupabase
         .from("chatroom_notifications")
         .update({
           enabled: newEnabled,
@@ -906,7 +1055,7 @@ async function toggleRoomNotifications(roomId, userId, privacy, button) {
 
       if (error) throw error;
     } else {
-      const { error } = await supabase
+      const { error } = await sharedSupabase
         .from("chatroom_notifications")
         .insert({
           chatroom_id: roomId,
