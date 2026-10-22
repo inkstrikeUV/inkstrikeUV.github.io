@@ -460,6 +460,57 @@ async function changePrivateRoomMember(roomId, username, action, ownerId) {
 
     return { ok: false, message: "Unknown member action." };
 }
+function addMemberAction(input, buttonText, action) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = buttonText;
+
+    button.onclick = async () => {
+        const username = input.value.trim();
+
+        if (!username) {
+            alert("Please enter a username.");
+            return;
+        }
+
+        const roomDiv = input.closest(".chatroom-entry");
+        const message = roomDiv?.querySelector(".room-edit-message");
+
+        if (message) message.textContent = "Processing...";
+
+        try {
+            const { data: { session } } =
+                await sharedSupabase.auth.getSession();
+
+            if (!session) {
+                alert("Please log in first.");
+                return;
+            }
+
+            const { data: room, error } = await sharedSupabase
+                .from("chatrooms")
+                .select("id, creator_id, privacy_type")
+                .eq("id", input.closest(".chatroom-entry")
+                    ?.querySelector(".chatroom-name")
+                    ?.dataset.roomId || "")
+                .maybeSingle();
+
+            if (error) throw error;
+
+            alert(
+                `The ${action} action needs to be connected to ` +
+                `the room's member-management handler.`
+            );
+        } catch (error) {
+            console.error(error);
+            alert("Could not process the member action.");
+        } finally {
+            if (message) message.textContent = "";
+        }
+    };
+
+    input.parentElement.appendChild(button);
+}
 
 
 async function toggleInlineChatroomClosed(roomId, currentlyClosed) {
@@ -796,6 +847,121 @@ function createRoomHeading(room, myId, titleText = room.name, allowEdit = true) 
     return top;
 }
 
+
+async function getRoomNotificationPreference(roomId, userId, privacy) {
+  const { data, error } = await supabase
+    .from("chatroom_notifications")
+    .select("enabled")
+    .eq("chatroom_id", roomId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error loading notification preference:", error);
+    return null;
+  }
+
+  // Keep the saved preference if one exists.
+  if (data) return data.enabled;
+
+  // Private rooms default ON; public rooms default OFF.
+  return privacy === "private";
+}
+
+async function toggleRoomNotifications(roomId, userId, privacy, button) {
+  button.disabled = true;
+
+  try {
+    const currentEnabled = await getRoomNotificationPreference(
+      roomId,
+      userId,
+      privacy
+    );
+
+    if (currentEnabled === null) {
+      alert("Couldn't load notification settings. Please try again.");
+      return;
+    }
+
+    const newEnabled = !currentEnabled;
+
+    const { data: existing, error: lookupError } = await supabase
+      .from("chatroom_notifications")
+      .select("chatroom_id")
+      .eq("chatroom_id", roomId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (lookupError) throw lookupError;
+
+    if (existing) {
+      const { error } = await supabase
+        .from("chatroom_notifications")
+        .update({
+          enabled: newEnabled,
+          updated_at: new Date().toISOString()
+        })
+        .eq("chatroom_id", roomId)
+        .eq("user_id", userId);
+
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("chatroom_notifications")
+        .insert({
+          chatroom_id: roomId,
+          user_id: userId,
+          enabled: newEnabled,
+          last_read_sequence: 0,
+          up_to_date: true
+        });
+
+      if (error) throw error;
+    }
+
+    button.dataset.enabled = String(newEnabled);
+    button.textContent = newEnabled
+      ? "Disable notifications"
+      : "Enable notifications";
+  } catch (error) {
+    console.error("Error updating notification settings:", error);
+    alert("Couldn't update notification settings. Please try again.");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function addNotificationToggle(room, roomDiv, userId) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "notification-toggle";
+  button.textContent = "Loading notifications...";
+  button.disabled = true;
+
+  button.onclick = () =>
+    toggleRoomNotifications(room.id, userId, room.privacy, button);
+
+  roomDiv.appendChild(button);
+
+  const enabled = await getRoomNotificationPreference(
+    room.id,
+    userId,
+    room.privacy
+  );
+
+  if (enabled === null) {
+    button.textContent = "Notifications unavailable";
+    return;
+  }
+
+  button.dataset.enabled = String(enabled);
+  button.textContent = enabled
+    ? "Disable notifications"
+    : "Enable notifications";
+
+  button.disabled = false;
+}
+
 async function loadPublicRooms() {
     const roomList = document.getElementById("public-rooms");
     if (!roomList) return;
@@ -854,8 +1020,12 @@ async function loadPublicRooms() {
         roomDiv.className = "chatroom-entry";
         roomDiv.appendChild(createRoomHeading(room, myId));
         roomList.appendChild(roomDiv);
+        addNotificationToggle(
+            { ...room, privacy: room.privacy_type },
+            roomDiv,
+            myId
+        );
     });
-
 }
 
 
@@ -913,22 +1083,25 @@ async function loadPrivateRooms() {
 
     privmemberships.forEach(privmembership => {
         const room = privmembership.chatrooms;
-        if (!room) return;
-
+        if (!room) return;    
         const roomDiv = document.createElement("div");
         roomDiv.className = "chatroom-entry";
         roomDiv.appendChild(createRoomHeading(room, myId));
+        addNotificationToggle(
+            { ...room, privacy: room.privacy_type },
+            roomDiv,
+            myId
+        );
         if (room.creator_id !== myId) {
             const leaveButton = document.createElement("button");
             leaveButton.textContent = "Leave Chatroom";
             leaveButton.onclick = () => leaveChatroom(room.id);
             roomDiv.appendChild(leaveButton);
         }
-
         roomList.appendChild(roomDiv);
     });
+}
 
-        }
 async function loadDMs() {
 
     const roomList = document.getElementById("dm-rooms");
