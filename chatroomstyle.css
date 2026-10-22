@@ -493,3 +493,27 @@ textarea:focus-visible {
         animation-duration: 0.01ms !important;
     }
 }
+
+.room-top {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+}
+
+.room-top .chatroom-name {
+    margin: 0;
+    margin-right: auto;
+}
+
+.room-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.room-actions button {
+    margin: 0;
+}

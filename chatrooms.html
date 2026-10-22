@@ -648,6 +648,9 @@ function addMemberAction(input, buttonText, action) {
 
             alert(result.message);
             input.value = "";
+            if (action === "ban") {
+            showTab("public");
+            }
         } catch (error) {
             console.error("Member action failed:", error);
             alert("Could not complete the action: " + error.message);
@@ -984,14 +987,21 @@ function createRoomHeading(room, myId, titleText = room.name, allowEdit = true) 
         }
     };
 
-    top.appendChild(title);
+    const actions = document.createElement("div");
+    actions.className = "room-actions";
+    actions.dataset.roomId = room.id;
 
     if (allowEdit && room.creator_id === myId) {
         const editButton = document.createElement("button");
+        editButton.type = "button";
         editButton.textContent = "Edit";
-        editButton.onclick = () => toggleInlineRoomEditor(room, top.parentElement);
-        top.appendChild(editButton);
+        editButton.onclick = () =>
+            toggleInlineRoomEditor(room, top.parentElement);
+
+        actions.appendChild(editButton);
     }
+    top.appendChild(title);
+    top.appendChild(actions);
 
     return top;
 }
@@ -1010,10 +1020,8 @@ async function getRoomNotificationPreference(roomId, userId, privacy) {
     return null;
   }
 
-  // Keep the saved preference if one exists.
   if (data) return data.enabled;
 
-  // Private rooms default ON; public rooms default OFF.
   return privacy === "private";
 }
 
@@ -1081,34 +1089,45 @@ async function toggleRoomNotifications(roomId, userId, privacy, button) {
 }
 
 async function addNotificationToggle(room, roomDiv, userId) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "notification-toggle";
-  button.textContent = "Loading notifications...";
-  button.disabled = true;
+    const actions = roomDiv.querySelector(".room-actions");
+    if (!actions) {
+        console.error("Room action container is missing:", room.id);
+        return;
+    }
 
-  button.onclick = () =>
-    toggleRoomNotifications(room.id, userId, room.privacy, button);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "notification-toggle";
+    button.textContent = "Loading notifications...";
+    button.disabled = true;
 
-  roomDiv.appendChild(button);
+    button.onclick = () =>
+        toggleRoomNotifications(
+            room.id,
+            userId,
+            room.privacy_type,
+            button
+        );
 
-  const enabled = await getRoomNotificationPreference(
-    room.id,
-    userId,
-    room.privacy
-  );
+    actions.appendChild(button);
 
-  if (enabled === null) {
-    button.textContent = "Notifications unavailable";
-    return;
-  }
+    const enabled = await getRoomNotificationPreference(
+        room.id,
+        userId,
+        room.privacy_type
+    );
 
-  button.dataset.enabled = String(enabled);
-  button.textContent = enabled
-    ? "Disable notifications"
-    : "Enable notifications";
+    if (enabled === null) {
+        button.textContent = "Notifications unavailable";
+        return;
+    }
 
-  button.disabled = false;
+    button.dataset.enabled = String(enabled);
+    button.textContent = enabled
+        ? "Disable notifications"
+        : "Enable notifications";
+
+    button.disabled = false;
 }
 
 async function loadPublicRooms() {
@@ -1169,11 +1188,7 @@ async function loadPublicRooms() {
         roomDiv.className = "chatroom-entry";
         roomDiv.appendChild(createRoomHeading(room, myId));
         roomList.appendChild(roomDiv);
-        addNotificationToggle(
-            { ...room, privacy: room.privacy_type },
-            roomDiv,
-            myId
-        );
+        addNotificationToggle(room, roomDiv, myId);
     });
 }
 
@@ -1232,20 +1247,18 @@ async function loadPrivateRooms() {
 
     privmemberships.forEach(privmembership => {
         const room = privmembership.chatrooms;
-        if (!room) return;    
+        if (!room) return;
         const roomDiv = document.createElement("div");
         roomDiv.className = "chatroom-entry";
         roomDiv.appendChild(createRoomHeading(room, myId));
-        addNotificationToggle(
-            { ...room, privacy: room.privacy_type },
-            roomDiv,
-            myId
-        );
+        addNotificationToggle(room, roomDiv, myId);
         if (room.creator_id !== myId) {
+            const actions = roomDiv.querySelector(".room-actions");
             const leaveButton = document.createElement("button");
+            leaveButton.type = "button";
             leaveButton.textContent = "Leave Chatroom";
             leaveButton.onclick = () => leaveChatroom(room.id);
-            roomDiv.appendChild(leaveButton);
+            actions.appendChild(leaveButton);
         }
         roomList.appendChild(roomDiv);
     });
